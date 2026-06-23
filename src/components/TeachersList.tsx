@@ -2,6 +2,16 @@ import React, { useState } from 'react';
 import type { Teacher } from '../types';
 import { Plus, Edit, Trash2, X, Search, Clock, Fingerprint, Users } from 'lucide-react';
 
+const DAYS_OF_WEEK = [
+  { id: 1, name: 'Lunes', shortName: 'Lun' },
+  { id: 2, name: 'Martes', shortName: 'Mar' },
+  { id: 3, name: 'Miércoles', shortName: 'Mié' },
+  { id: 4, name: 'Jueves', shortName: 'Jue' },
+  { id: 5, name: 'Viernes', shortName: 'Vie' },
+  { id: 6, name: 'Sábado', shortName: 'Sáb' },
+  { id: 7, name: 'Domingo', shortName: 'Dom' }
+];
+
 interface TeachersListProps {
   teachers: Teacher[];
   onAddTeacher: (teacher: Omit<Teacher, 'id' | 'status' | 'lastScanTime'>) => void;
@@ -21,18 +31,38 @@ export const TeachersList: React.FC<TeachersListProps> = ({
 
   // Form State
   const [name, setName] = useState('');
+  const [dni, setDni] = useState('');
   const [subject, setSubject] = useState('');
-  const [entryTime, setEntryTime] = useState('08:00');
-  const [exitTime, setExitTime] = useState('13:00');
+  const [schedulesState, setSchedulesState] = useState<{
+    [day: number]: { active: boolean; entryTime: string; exitTime: string }
+  }>({
+    1: { active: true, entryTime: '08:00', exitTime: '13:00' },
+    2: { active: true, entryTime: '08:00', exitTime: '13:00' },
+    3: { active: true, entryTime: '08:00', exitTime: '13:00' },
+    4: { active: true, entryTime: '08:00', exitTime: '13:00' },
+    5: { active: true, entryTime: '08:00', exitTime: '13:00' },
+    6: { active: false, entryTime: '08:00', exitTime: '13:00' },
+    7: { active: false, entryTime: '08:00', exitTime: '13:00' }
+  });
+  const [selectedDayTab, setSelectedDayTab] = useState(1);
   const [fingerprintId, setFingerprintId] = useState('');
   const [formError, setFormError] = useState('');
 
   const openAddModal = () => {
     setEditingTeacher(null);
     setName('');
+    setDni('');
     setSubject('');
-    setEntryTime('08:00');
-    setExitTime('13:00');
+    setSelectedDayTab(1);
+    setSchedulesState({
+      1: { active: true, entryTime: '08:00', exitTime: '13:00' },
+      2: { active: true, entryTime: '08:00', exitTime: '13:00' },
+      3: { active: true, entryTime: '08:00', exitTime: '13:00' },
+      4: { active: true, entryTime: '08:00', exitTime: '13:00' },
+      5: { active: true, entryTime: '08:00', exitTime: '13:00' },
+      6: { active: false, entryTime: '08:00', exitTime: '13:00' },
+      7: { active: false, entryTime: '08:00', exitTime: '13:00' }
+    });
     // Auto-generate a logical next fingerprint ID (e.g. max + 1)
     const maxId = teachers.reduce((max, t) => {
       const num = parseInt(t.fingerprintId);
@@ -46,9 +76,33 @@ export const TeachersList: React.FC<TeachersListProps> = ({
   const openEditModal = (teacher: Teacher) => {
     setEditingTeacher(teacher);
     setName(teacher.name);
+    setDni(teacher.dni || '');
     setSubject(teacher.subject);
-    setEntryTime(teacher.entryTime);
-    setExitTime(teacher.exitTime);
+    setSelectedDayTab(1);
+    
+    const newState: typeof schedulesState = {};
+    for (let i = 1; i <= 7; i++) {
+      if (teacher.schedules && teacher.schedules[i]) {
+        newState[i] = {
+          active: true,
+          entryTime: teacher.schedules[i].entryTime,
+          exitTime: teacher.schedules[i].exitTime
+        };
+      } else if (!teacher.schedules && i <= 5) {
+        newState[i] = {
+          active: true,
+          entryTime: teacher.entryTime || '08:00',
+          exitTime: teacher.exitTime || '13:00'
+        };
+      } else {
+        newState[i] = {
+          active: false,
+          entryTime: '08:00',
+          exitTime: '13:00'
+        };
+      }
+    }
+    setSchedulesState(newState);
     setFingerprintId(teacher.fingerprintId);
     setFormError('');
     setIsModalOpen(true);
@@ -65,9 +119,8 @@ export const TeachersList: React.FC<TeachersListProps> = ({
 
     // Validations
     if (!name.trim()) return setFormError('El nombre es obligatorio.');
+    if (!dni.trim()) return setFormError('El DNI es obligatorio.');
     if (!subject.trim()) return setFormError('La materia es obligatoria.');
-    if (!entryTime) return setFormError('El horario de entrada es obligatorio.');
-    if (!exitTime) return setFormError('El horario de salida es obligatorio.');
     if (!fingerprintId.trim()) return setFormError('El ID de Huella es obligatorio.');
 
     // Check unique fingerprint ID
@@ -79,20 +132,48 @@ export const TeachersList: React.FC<TeachersListProps> = ({
       return setFormError(`El ID de Huella ${fingerprintId} ya está asignado a ${duplicate.name}.`);
     }
 
+    // Format schedules
+    const schedules: { [day: number]: { entryTime: string; exitTime: string } } = {};
+    let firstActiveEntry = '';
+    let firstActiveExit = '';
+    
+    Object.keys(schedulesState).forEach((key) => {
+      const dayId = Number(key);
+      const sched = schedulesState[dayId];
+      if (sched.active) {
+        schedules[dayId] = {
+          entryTime: sched.entryTime,
+          exitTime: sched.exitTime
+        };
+        if (!firstActiveEntry) {
+          firstActiveEntry = sched.entryTime;
+          firstActiveExit = sched.exitTime;
+        }
+      }
+    });
+
+    if (Object.keys(schedules).length === 0) {
+      return setFormError('Debe seleccionar al menos un día de trabajo con su respectivo horario.');
+    }
+
     if (editingTeacher) {
       onUpdateTeacher(editingTeacher.id, {
         name,
+        dni,
         subject,
-        entryTime,
-        exitTime,
+        entryTime: firstActiveEntry,
+        exitTime: firstActiveExit,
+        schedules,
         fingerprintId
       });
     } else {
       onAddTeacher({
         name,
+        dni,
         subject,
-        entryTime,
-        exitTime,
+        entryTime: firstActiveEntry,
+        exitTime: firstActiveExit,
+        schedules,
         fingerprintId,
         active: true
       });
@@ -196,12 +277,63 @@ export const TeachersList: React.FC<TeachersListProps> = ({
                 </div>
 
                 <div className="teacher-card-body">
-                  <div className="info-row">
-                    <span className="info-label flex items-center gap-2">
+                  <div className="info-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '6px' }}>
+                    <span className="info-label flex items-center gap-2" style={{ marginBottom: '4px' }}>
                       <Clock size={12} />
-                      Horario registrado:
+                      Horarios semanales:
                     </span>
-                    <span className="info-value">{teacher.entryTime} - {teacher.exitTime}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingLeft: '14px', width: '100%' }}>
+                      {(() => {
+                        const DAYS = [
+                          { id: 1, short: 'Lun' },
+                          { id: 2, short: 'Mar' },
+                          { id: 3, short: 'Mié' },
+                          { id: 4, short: 'Jue' },
+                          { id: 5, short: 'Vie' },
+                          { id: 6, short: 'Sáb' },
+                          { id: 7, short: 'Dom' }
+                        ];
+                        const activeDays = DAYS.filter(d => teacher.schedules?.[d.id]);
+                        
+                        if (activeDays.length === 0) {
+                          return (
+                            <div style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                              <span style={{ fontWeight: 600 }}>Lun - Vie:</span>
+                              <span>{teacher.entryTime} - {teacher.exitTime}</span>
+                            </div>
+                          );
+                        }
+
+                        const groups: { [timeStr: string]: string[] } = {};
+                        activeDays.forEach(d => {
+                          const sched = teacher.schedules?.[d.id];
+                          if (sched) {
+                            const timeStr = `${sched.entryTime} - ${sched.exitTime}`;
+                            if (!groups[timeStr]) groups[timeStr] = [];
+                            groups[timeStr].push(d.short);
+                          }
+                        });
+
+                        return Object.entries(groups).map(([timeStr, days]) => (
+                          <div 
+                            key={timeStr} 
+                            style={{ 
+                              fontSize: '12px', 
+                              display: 'flex', 
+                              justifyContent: 'space-between',
+                              color: 'var(--text-secondary)',
+                              borderBottom: '1px dashed rgba(255, 255, 255, 0.05)',
+                              paddingBottom: '4px'
+                            }}
+                          >
+                            <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                              {days.join(', ')}:
+                            </span>
+                            <span style={{ fontWeight: 500 }}>{timeStr}</span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
                   </div>
                   <div className="info-row">
                     <span className="info-label flex items-center gap-2">
@@ -282,6 +414,19 @@ export const TeachersList: React.FC<TeachersListProps> = ({
                 </div>
 
                 <div className="form-group">
+                  <label htmlFor="teacherDni">DNI / Documento del Profesor</label>
+                  <input
+                    type="text"
+                    id="teacherDni"
+                    className="form-control"
+                    placeholder="Ej. 34.802.780"
+                    value={dni}
+                    onChange={(e) => setDni(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="teacherSubject">Materia / Cargo Administrativo</label>
                   <input
                     type="text"
@@ -294,29 +439,106 @@ export const TeachersList: React.FC<TeachersListProps> = ({
                   />
                 </div>
 
-                <div className="form-row">
+                <div style={{ margin: '20px 0', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                    Configuración de Horarios por Día
+                  </h4>
+
                   <div className="form-group">
-                    <label htmlFor="entryTime">Hora de Entrada</label>
-                    <input
-                      type="time"
-                      id="entryTime"
+                    <label htmlFor="daySelector" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Seleccionar día de la semana</label>
+                    <select
+                      id="daySelector"
                       className="form-control"
-                      value={entryTime}
-                      onChange={(e) => setEntryTime(e.target.value)}
-                      required
-                    />
+                      value={selectedDayTab}
+                      onChange={(e) => setSelectedDayTab(Number(e.target.value))}
+                    >
+                      {DAYS_OF_WEEK.map((day) => {
+                        const hasSched = schedulesState[day.id]?.active;
+                        return (
+                          <option key={day.id} value={day.id}>
+                            {day.name} {hasSched ? ' (Activo)' : ' (No asiste)'}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="exitTime">Hora de Salida</label>
-                    <input
-                      type="time"
-                      id="exitTime"
-                      className="form-control"
-                      value={exitTime}
-                      onChange={(e) => setExitTime(e.target.value)}
-                      required
-                    />
-                  </div>
+
+                  {(() => {
+                    const day = DAYS_OF_WEEK.find(d => d.id === selectedDayTab)!;
+                    const sched = schedulesState[selectedDayTab] || { active: false, entryTime: '08:00', exitTime: '13:00' };
+                    return (
+                      <div
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '8px',
+                          backgroundColor: sched.active ? 'rgba(99, 102, 241, 0.05)' : 'rgba(255, 255, 255, 0.01)',
+                          border: sched.active ? '1px solid rgba(99, 102, 241, 0.15)' : '1px solid var(--border-color)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                          marginTop: '8px'
+                        }}
+                      >
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0, cursor: 'pointer', userSelect: 'none' }}>
+                          <input
+                            type="checkbox"
+                            checked={sched.active}
+                            onChange={(e) => {
+                              setSchedulesState(prev => ({
+                                ...prev,
+                                [selectedDayTab]: { ...prev[selectedDayTab], active: e.target.checked }
+                              }));
+                            }}
+                            style={{ width: '15px', height: '15px', cursor: 'pointer' }}
+                          />
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            El docente asiste los días {day.name}
+                          </span>
+                        </label>
+
+                        {sched.active ? (
+                          <div className="form-row">
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Entrada</label>
+                              <input
+                                type="time"
+                                className="form-control"
+                                style={{ height: '32px', padding: '4px 8px', fontSize: '12px' }}
+                                value={sched.entryTime}
+                                onChange={(e) => {
+                                  setSchedulesState(prev => ({
+                                    ...prev,
+                                    [selectedDayTab]: { ...prev[selectedDayTab], entryTime: e.target.value }
+                                  }));
+                                }}
+                                required={sched.active}
+                              />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Salida</label>
+                              <input
+                                type="time"
+                                className="form-control"
+                                style={{ height: '32px', padding: '4px 8px', fontSize: '12px' }}
+                                value={sched.exitTime}
+                                onChange={(e) => {
+                                  setSchedulesState(prev => ({
+                                    ...prev,
+                                    [selectedDayTab]: { ...prev[selectedDayTab], exitTime: e.target.value }
+                                  }));
+                                }}
+                                required={sched.active}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            El docente no asiste a la institución los días {day.name}.
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="form-group">

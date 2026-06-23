@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Teacher, ScanLog } from '../types';
+import { getDayNumber } from '../services/db';
 import { 
   Users, 
   CheckCircle2, 
@@ -150,12 +151,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <tbody>
                   {filteredTeachers.map((teacher) => {
                     const present = teacher.status === 'present';
-                    const activeSchedule = isWithinSchedule(teacher.entryTime, teacher.exitTime, currentHHMM);
+                    const dayNumber = getDayNumber(currentTime);
+                    const todaySchedule = teacher.schedules?.[dayNumber];
                     
-                    let scheduleStatusText = '';
-                    let scheduleStatusColor = 'var(--text-muted)';
+                    let activeSchedule = false;
+                    let scheduleText: string;
+                    let hasScheduleToday = false;
+
+                    if (todaySchedule) {
+                      activeSchedule = isWithinSchedule(todaySchedule.entryTime, todaySchedule.exitTime, currentHHMM);
+                      scheduleText = `${todaySchedule.entryTime} - ${todaySchedule.exitTime}`;
+                      hasScheduleToday = true;
+                    } else if (teacher.schedules) {
+                      scheduleText = 'No trabaja hoy';
+                    } else {
+                      // Fallback to legacy fields
+                      activeSchedule = isWithinSchedule(teacher.entryTime, teacher.exitTime, currentHHMM);
+                      scheduleText = `${teacher.entryTime} - ${teacher.exitTime}`;
+                      hasScheduleToday = true;
+                    }
+
+                    let scheduleStatusText: string;
+                    let scheduleStatusColor: string;
                     
-                    if (activeSchedule) {
+                    if (!hasScheduleToday) {
+                      scheduleStatusText = 'No trabaja hoy';
+                      scheduleStatusColor = 'var(--text-muted)';
+                    } else if (activeSchedule) {
                       scheduleStatusText = 'En horario laboral';
                       scheduleStatusColor = 'var(--color-primary)';
                     } else {
@@ -173,7 +195,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <td>
                           <div className="flex items-center gap-2" style={{ fontSize: '13px' }}>
                             <Clock size={14} className="text-muted" />
-                            <span>{teacher.entryTime} - {teacher.exitTime}</span>
+                            <span style={{ 
+                              color: !hasScheduleToday ? 'var(--text-muted)' : 'inherit',
+                              fontStyle: !hasScheduleToday ? 'italic' : 'normal'
+                            }}>
+                              {scheduleText}
+                            </span>
                           </div>
                         </td>
                         <td>

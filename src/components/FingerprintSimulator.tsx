@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import type { Teacher } from '../types';
 import { Fingerprint, Info, Cpu } from 'lucide-react';
+import { getDayNumber } from '../services/db';
 
 interface FingerprintSimulatorProps {
   teachers: Teacher[];
+  currentTime: Date;
   onScan: (fingerprintId: string) => { success: boolean; message: string };
 }
 
 export const FingerprintSimulator: React.FC<FingerprintSimulatorProps> = ({ 
   teachers, 
+  currentTime,
   onScan 
 }) => {
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
@@ -253,8 +256,19 @@ export const FingerprintSimulator: React.FC<FingerprintSimulatorProps> = ({
                   <span>{selectedTeacher.subject}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Horario:</span>
-                  <span>{selectedTeacher.entryTime} - {selectedTeacher.exitTime}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>Horario Hoy:</span>
+                  <span>
+                    {(() => {
+                      const dayNumber = getDayNumber(currentTime);
+                      const todaySchedule = selectedTeacher.schedules?.[dayNumber];
+                      if (todaySchedule) {
+                        return `${todaySchedule.entryTime} - ${todaySchedule.exitTime}`;
+                      } else if (selectedTeacher.schedules) {
+                        return 'No trabaja hoy';
+                      }
+                      return `${selectedTeacher.entryTime} - ${selectedTeacher.exitTime}`;
+                    })()}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Estado Actual:</span>

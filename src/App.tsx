@@ -13,20 +13,14 @@ import './App.css';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [logs, setLogs] = useState<ScanLog[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>(() => db.getTeachers());
+  const [logs, setLogs] = useState<ScanLog[]>(() => db.getLogs());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   
   // System Time State (Real vs Simulated)
   const [isSimulatingTime, setIsSimulatingTime] = useState(false);
   const [systemTime, setSystemTime] = useState(new Date());
   const [simulatedTimeStr, setSimulatedTimeStr] = useState('08:00'); // HH:MM for simulation
-
-  // Load initial data
-  useEffect(() => {
-    setTeachers(db.getTeachers());
-    setLogs(db.getLogs());
-  }, []);
 
   // Update clock every second if not simulating
   useEffect(() => {
@@ -46,6 +40,7 @@ function App() {
     const [hours, minutes] = simulatedTimeStr.split(':').map(Number);
     const newTime = new Date();
     newTime.setHours(hours, minutes, 0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSystemTime(newTime);
   }, [simulatedTimeStr, isSimulatingTime]);
 
@@ -69,7 +64,7 @@ function App() {
       const added = db.addTeacher(newTeacherData);
       setTeachers(db.getTeachers());
       addToast(`Docente ${added.name} registrado con éxito.`, 'success');
-    } catch (error) {
+    } catch {
       addToast('Error al registrar al docente.', 'error');
     }
   };
@@ -80,7 +75,7 @@ function App() {
       db.updateTeacher(id, updatedData);
       setTeachers(db.getTeachers());
       addToast(`Registro de docente actualizado.`, 'success');
-    } catch (error) {
+    } catch {
       addToast('Error al actualizar el registro.', 'error');
     }
   };
@@ -91,7 +86,7 @@ function App() {
       db.deleteTeacher(id);
       setTeachers(db.getTeachers());
       addToast('Registro del docente eliminado.', 'info');
-    } catch (error) {
+    } catch {
       addToast('Error al eliminar al docente.', 'error');
     }
   };
@@ -154,6 +149,7 @@ function App() {
         return (
           <FingerprintSimulator 
             teachers={teachers}
+            currentTime={systemTime}
             onScan={handleBiometricScan}
           />
         );
