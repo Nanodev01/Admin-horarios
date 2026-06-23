@@ -26,8 +26,8 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
   });
 
   const handleExport = () => {
-    // Basic CSV mock download
-    const headers = ['Fecha', 'Hora', 'Docente', 'Materia', 'Huella ID', 'Tipo', 'Estado'];
+    
+    const headers = ['Fecha', 'Hora', 'Docente', 'Materia', 'Huella ID', 'Tipo', 'Estado', 'Observaciones'];
     const rows = filteredLogs.map(log => {
       const dateObj = new Date(log.timestamp);
       const date = dateObj.toLocaleDateString();
@@ -66,7 +66,12 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
       onClearLogs();
     }
   };
-
+  const handleOpenTeacher = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    
+    // Al estar en la carpeta 'public', se accede directo con la barra '/'
+    window.open('/Ejemplo.html', '_blank');
+  };
   return (
     <div className="access-logs-container panel-card">
       {/* Panel Header */}
@@ -175,6 +180,7 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
                 <th>ID Huella</th>
                 <th>Acción</th>
                 <th>Estado Horario</th>
+                <th>Exportar</th>
               </tr>
             </thead>
             <tbody>
@@ -224,6 +230,14 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
                       <span className={`badge ${statusBadgeClass}`} style={{ fontSize: '10px' }}>
                         {statusText}
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={handleOpenTeacher} 
+                      >
+                        <Download size={14} />
+                      </button>
                     </td>
                   </tr>
                 );

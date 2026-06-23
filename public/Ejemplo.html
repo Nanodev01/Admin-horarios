@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Comprobante de Registro Biométrico de Asistencia</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace; /* Tipografía tipo auditoría/legal */
+            color: #000;
+            background-color: #fff;
+            margin: 0;
+            padding: 30px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .container {
+            border: 2px solid #000;
+            padding: 20px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 18px;
+            text-transform: uppercase;
+            margin: 0 0 5px 0;
+        }
+        .header p {
+            margin: 3px 0;
+        }
+        .section-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            margin-top: 20px;
+            padding-bottom: 3px;
+        }
+        table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        td {
+            padding: 6px 0;
+            vertical-align: top;
+        }
+        .w-35 { width: 35%; font-weight: bold; }
+        .w-65 { width: 65%; }
+        .hash-box {
+            font-family: monospace;
+            font-size: 10px;
+            background-color: #fff;
+            border: 1px solid #000;
+            padding: 10px;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 10px;
+            text-align: justify;
+            border-top: 1px dashed #000;
+            padding-top: 10px;
+        }
+        .signatures {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-line {
+            width: 40%;
+            border-top: 1px solid #000;
+            text-align: center;
+            padding-top: 5px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="header">
+        <h1>Comprobante de Registro Biométrico de Asistencia</h1>
+        <p><strong>SISTEMA DE GESTIÓN DE HORARIOS E INGRESO INSTITUCIONAL</strong></p>
+        <p>Validez de Control de Presentismo / Constancia para Cobertura de A.R.T.</p>
+    </div>
+
+    <table>
+        <tr>
+            <td class="w-35">NÚMERO DE TRANSACCIÓN:</td>
+            <td class="w-65">TRX-20260622-089422</td>
+        </tr>
+        <tr>
+            <td class="w-35">ESTADO DEL REGISTRO:</td>
+            <td class="w-65"><strong>VALIDADO / EXITOSO</strong></td>
+        </tr>
+    </table>
+
+    <div class="section-title">Datos del Personal de la Institución</div>
+    <table>
+        <tr>
+            <td class="w-35">APELLIDO Y NOMBRE:</td>
+            <td class="w-65">Rodríguez, Carlos Alberto</td>
+        </tr>
+        <tr>
+            <td class="w-35">DOCUMENTO (DNI/ID):</td>
+            <td class="w-65">[Completar con DNI del profesor]</td>
+        </tr>
+        <tr>
+            <td class="w-35">FUNCIÓN / CARGO:</td>
+            <td class="w-65">Docente Institucional</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Detalles del Marcado Cronológico (Timestamp)</div>
+    <table>
+        <tr>
+            <td class="w-35">FECHA DE REGISTRO:</td>
+            <td class="w-65">22 / 06 / 2026</td>
+        </tr>
+        <tr>
+            <td class="w-35">HORA DE INGRESO (SERVER):</td>
+            <td class="w-65">20:00:00 PM</td>
+        </tr>
+        <tr>
+            <td class="w-35">TIPO DE MOVIMIENTO:</td>
+            <td class="w-65">INGRESO / ENTRADA</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Evidencia Técnica e Inalterabilidad Digital</div>
+    <table>
+        <tr>
+            <td class="w-35">MÉTODO DE VERIFICACIÓN:</td>
+            <td class="w-65">Biométrico Hardware (Sensor Óptico AS608 UART)</td>
+        </tr>
+        <tr>
+            <td class="w-35">ID BIOMÉTRICO ASIGNADO:</td>
+            <td class="w-65">ID #042 (Asociado unívocamente a Legajo de Origen)</td>
+        </tr>
+        <tr>
+            <td class="w-35">FIRMA DIGITAL (HASH MD5/SHA256):</td>
+            <td class="w-65">
+                <div class="hash-box">
+                    8f9a2c3b4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        <strong>NOTA LEGAL DE AUDITORÍA:</strong> Este documento constituye una constancia digital de presencia emitida por el servidor central de la institución. La verificación biométrica por huella dactilar garantiza el principio de no repudio. El código Hash superior vincula de forma matemática e indisoluble la identidad del docente, la fecha, la hora exacta del servidor y el identificador físico del hardware. Cualquier alteración de estos datos anula la validez del presente comprobante ante auditorías de la Aseguradora de Riesgos del Trabajo (A.R.T.).
+    </div>
+
+    <div class="signatures">
+        <div class="signature-line">
+            Firma y Aclaración Responsable Institucional
+        </div>
+        <div class="signature-line">
+            Firma del Agente / Docente (Opcional)
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
