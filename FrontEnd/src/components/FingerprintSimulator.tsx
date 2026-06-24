@@ -6,7 +6,7 @@ import { getDayNumber } from '../services/db';
 interface FingerprintSimulatorProps {
   teachers: Teacher[];
   currentTime: Date;
-  onScan: (fingerprintId: string) => { success: boolean; message: string };
+  onScan: (fingerprintId: string) => Promise<{ success: boolean; message: string }>;
 }
 
 export const FingerprintSimulator: React.FC<FingerprintSimulatorProps> = ({ 
@@ -49,9 +49,9 @@ export const FingerprintSimulator: React.FC<FingerprintSimulatorProps> = ({
       message: 'Escaneando huella... No retire el dedo.'
     });
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setScanning(false);
-      const res = onScan(fingerprintId);
+      const res = await onScan(fingerprintId);
       
       if (res.success) {
         setScanResult({

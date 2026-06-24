@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+
+model Teacher {
+  id            String    @id @default(uuid())
+  name          String
+  dni           String?   
+  subject       String
+  entryTime     String    
+  exitTime      String    
+  fingerprintId String    @unique 
+  active        Boolean   @default(true)
+  status        String    @default("absent") 
+  lastScanTime  String?   
+
+
+  schedules     DaySchedule[]
+  scanLogs      ScanLog[]
+}
+
+
+model DaySchedule {
+  id        String  @id @default(uuid())
+  teacherId String
+  dayNumber Int     
+  entryTime String  
+  exitTime  String  
+
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, dayNumber]) 
+}
+
+
+model ScanLog {
+  id             String   @id @default(uuid())
+  teacherId      String
+  teacherName    String
+  teacherSubject String
+  fingerprintId  String
+  timestamp      String   
+  type           String   
+  status         String   
+  securityHash   String   
+
+  teacher        Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}

@@ -9,6 +9,7 @@ import { AccessLog } from './components/AccessLog';
 import { ToastContainer } from './components/Toast';
 import type { ToastMessage } from './components/Toast';
 import { Clock, Sliders, RotateCcw } from 'lucide-react';
+import { Terminal } from './components/Terminal';
 import './App.css';
 
 function App() {
@@ -43,6 +44,20 @@ function App() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSystemTime(newTime);
   }, [simulatedTimeStr, isSimulatingTime]);
+
+  // Sync state between tabs in real-time
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'school_scan_logs') {
+        setLogs(db.getLogs());
+      }
+      if (e.key === 'school_teachers') {
+        setTeachers(db.getTeachers());
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Helper to add toast
   const addToast = (text: string, type: 'success' | 'error' | 'info') => {
@@ -92,8 +107,8 @@ function App() {
   };
 
   // Biometric Scan Callback (processes entry/exit)
-  const handleBiometricScan = (fingerprintId: string) => {
-    const result = db.registerScan(fingerprintId, systemTime);
+  const handleBiometricScan = async (fingerprintId: string) => {
+    const result = await db.registerScan(fingerprintId, systemTime);
     
     // Sync React states
     setTeachers(db.getTeachers());
@@ -174,6 +189,11 @@ function App() {
       default: return 'Escuela López Jordán';
     }
   };
+
+  const isTerminal = window.location.pathname === '/terminal';
+  if (isTerminal) {
+    return <Terminal initialLogs={logs} />;
+  }
 
   return (
     <div className="app-container">

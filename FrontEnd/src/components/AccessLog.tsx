@@ -96,30 +96,10 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
     const datePart = dateObj.toISOString().slice(0, 10).replace(/-/g, '');
     const cleanId = log.id.replace('l_', '').toUpperCase();
     const trxId = `TRX-${datePart}-${cleanId}`;
-
-    const parsedFingerprint = parseInt(log.fingerprintId) || 0;
-    const fallbackDni = (20000000 + parsedFingerprint * 739).toLocaleString('es-AR');
     const teachers = db.getTeachers();
     const matchedTeacher = teachers.find(t => t.id === log.teacherId);
-    const mockDni = matchedTeacher?.dni || fallbackDni;
+    const Dni = matchedTeacher?.dni;
 
-    // Simple deterministic hash generator
-    let hashVal = 0;
-    const hashStr = log.id + log.timestamp;
-    for (let i = 0; i < hashStr.length; i++) {
-      hashVal = (hashVal << 5) - hashVal + hashStr.charCodeAt(i);
-      hashVal |= 0;
-    }
-    const hashHex = (
-      Math.abs(hashVal).toString(16).padEnd(8, 'a') + 
-      Math.abs(hashVal * 31).toString(16).padEnd(8, 'b') +
-      Math.abs(hashVal * 97).toString(16).padEnd(8, 'c') +
-      Math.abs(hashVal * 13).toString(16).padEnd(8, 'd') +
-      Math.abs(hashVal * 7).toString(16).padEnd(8, 'e') +
-      Math.abs(hashVal * 5).toString(16).padEnd(8, 'f') +
-      Math.abs(hashVal * 3).toString(16).padEnd(8, '7') +
-      Math.abs(hashVal * 2).toString(16).padEnd(8, '9')
-    ).slice(0, 64);
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -278,7 +258,7 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
         </tr>
         <tr>
             <td class="w-35">DOCUMENTO (DNI/ID):</td>
-            <td class="w-65">${mockDni}</td>
+            <td class="w-65">${Dni}</td>
         </tr>
         <tr>
             <td class="w-35">FUNCIÓN / CARGO:</td>
@@ -316,7 +296,7 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
             <td class="w-35">FIRMA DIGITAL (HASH MD5/SHA256):</td>
             <td class="w-65">
                 <div class="hash-box">
-                    ${hashHex}
+                    ${log.securityHash}
                 </div>
             </td>
         </tr>

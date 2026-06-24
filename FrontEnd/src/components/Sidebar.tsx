@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Fingerprint, History, School } from 'lucide-react';
+import { LayoutDashboard, Users, Fingerprint, History, School, ExternalLink } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
@@ -38,6 +38,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
             </button>
           );
         })}
+        
+        <a
+          href="/terminal"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="nav-item"
+          style={{ 
+            marginTop: 'auto', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            borderTop: '1px solid var(--border-color)',
+            paddingTop: '16px',
+            borderRadius: '0'
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Fingerprint size={20} className="text-secondary" />
+            <span>Terminal Vista</span>
+          </div>
+          <ExternalLink size={14} className="text-muted" />
+        </a>
       </nav>
       
       <div className="sidebar-footer">

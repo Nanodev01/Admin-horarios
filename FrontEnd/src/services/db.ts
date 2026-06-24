@@ -1,5 +1,4 @@
 import type { Teacher, ScanLog } from '../types';
-
 const TEACHERS_KEY = 'school_teachers';
 const LOGS_KEY = 'school_scan_logs';
 
@@ -7,6 +6,7 @@ export function getDayNumber(date: Date): number {
   const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   return day === 0 ? 7 : day;
 }
+
 
 const INITIAL_TEACHERS: Teacher[] = [
   {
@@ -106,7 +106,8 @@ const INITIAL_LOGS: ScanLog[] = [
     fingerprintId: '1002',
     timestamp: new Date(new Date().setHours(7, 50, 0)).toISOString(),
     type: 'in',
-    status: 'normal'
+    status: 'normal',
+    securityHash: 'hash1234'
   },
   {
     id: 'l2',
@@ -116,7 +117,8 @@ const INITIAL_LOGS: ScanLog[] = [
     fingerprintId: '1005',
     timestamp: new Date(new Date().setHours(13, 55, 0)).toISOString(),
     type: 'in',
-    status: 'normal'
+    status: 'normal',
+    securityHash: 'hash123'
   }
 ];
 
@@ -177,7 +179,7 @@ export const db = {
 
   // This is the core logic for the fingerprint scanner or verify interface.
   // It handles check-in/check-out and categorizes the scan.
-  registerScan(fingerprintId: string, timestamp: Date = new Date()): { success: boolean; message: string; log?: ScanLog; teacher?: Teacher } {
+  async registerScan(fingerprintId: string, timestamp: Date = new Date()): Promise<{ success: boolean; message: string; log?: ScanLog; teacher?: Teacher }> {
     const teachers = this.getTeachers();
     const teacher = teachers.find(t => t.fingerprintId === fingerprintId && t.active);
     
@@ -197,6 +199,7 @@ export const db = {
     let scheduleEntry = teacher.entryTime;
     let scheduleExit = teacher.exitTime;
     let hasScheduleToday = true;
+
 
     if (teacher.schedules) {
       if (teacher.schedules[dayNumber]) {
@@ -244,6 +247,12 @@ export const db = {
       }
     }
 
+    const rawHash = `${teacher.fingerprintId}-${timestamp.toISOString()}-${type}-${logStatus}`; // Data hash made with timestamp and logstatus
+    const msgUint8 = new TextEncoder().encode(rawHash);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer)); // Convert buffer to array of bytes
+    const securityHashString = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
     // Update teacher presence status
     teacher.status = type === 'in' ? 'present' : 'absent';
     teacher.lastScanTime = timestamp.toISOString();
@@ -258,7 +267,8 @@ export const db = {
       fingerprintId: teacher.fingerprintId,
       timestamp: timestamp.toISOString(),
       type,
-      status: logStatus
+      status: logStatus,
+      securityHash: securityHashString
     };
 
     const logs = this.getLogs();

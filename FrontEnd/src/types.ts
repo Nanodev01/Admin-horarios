@@ -26,5 +26,6 @@ export interface ScanLog {
   timestamp: string; // Date ISO string
   type: 'in' | 'out';
   status: 'normal' | 'late' | 'early_exit' | 'outside_schedule';
+  securityHash: string;
 }
 
