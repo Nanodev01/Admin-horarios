@@ -16,6 +16,29 @@ uart = serial.Serial("/dev/serial0", baudrate=57600, timeout=1)
 
 finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
 
+# 1.5 CONFIGURACIÓN DE DETECCIÓN DACTILAR (Cables T-3.3 y T-OUT)
+# T-3.3: Alimentación del detector de tacto. Se conecta al pin de 3.3V (Pin 17 de la Raspberry Pi).
+# T-OUT: Salida del detector de tacto. Se conecta al pin GPIO 24 (Pin 18 de la Raspberry Pi).
+#
+# ¿Para qué sirven?
+# Sirven para saber si hay un dedo apoyado en el lector a nivel de hardware (capacitivo),
+# antes de iniciar la lectura óptica y transmisión serie. De esta forma, evitamos que la Raspberry Pi
+# esté consultando (polling) constantemente por el puerto serie, reduciendo el uso de CPU a casi 0% en reposo.
+GPIO_PIN_TOUCH = 24
+TOUCH_STATE_ACTIVE = 1 # 1 = GPIO.HIGH (Active High), cambialo a 0 si tu módulo es Active-Low
+has_gpio = False
+
+try:
+    import RPi.GPIO as GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(GPIO_PIN_TOUCH, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    has_gpio = True
+    print("🔋 Detector dactilar capacitivo activo (GPIO 24 / Pin 18). Ahorro de CPU habilitado.")
+except ImportError:
+    print("⚠️ RPi.GPIO no está disponible. Usando método de sondeo continuo (polling) por UART.")
+except Exception as e:
+    print(f"⚠️ No se pudo inicializar el pin GPIO: {e}. Usando método de sondeo continuo (polling) por UART.")
+
 # 2. CONFIGURACIÓN DE LA URL DEL BACKEND (NODE.JS)
 # Como corre adentro de la misma Raspberry, le pega a 'localhost'
 API_URL = "http://localhost:3000/api/logs/scan"
@@ -34,6 +57,13 @@ print("\n🚀 El lector está activo. Esperando que un profesor apoye el dedo...
 
 # 3. BUCLE INFINITO DE VIGILANCIA
 while True:
+    # Si tenemos GPIO habilitado, verificamos primero si hay un dedo tocando el lector
+    if has_gpio:
+        is_touching = GPIO.input(GPIO_PIN_TOUCH) == TOUCH_STATE_ACTIVE
+        if not is_touching:
+            time.sleep(0.1)  # mini pausa para no consumir recursos
+            continue
+
     # Intentamos capturar una imagen del dedo en el sensor
     resultado_imagen = finger.get_image()
     
@@ -65,6 +95,13 @@ while True:
                     
             else:
                 print("❌ Huella no reconocida en el sensor.")
+                try:
+                    payload = {"fingerprintId": "unknown"}
+                    response = requests.post(API_URL, json=payload)
+                    if response.status_code == 404:
+                        print("📡 Mensaje de huella no reconocida enviado al servidor Express.")
+                except requests.exceptions.RequestException as e:
+                    print(f"🚨 No se pudo enviar el error al servidor Node.js: {e}")
         
         # Pequeña pausa para evitar lecturas duplicadas del mismo dedo
         print("\n⏳ Soltá el sensor para la próxima lectura...")

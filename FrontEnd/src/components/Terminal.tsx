@@ -47,6 +47,7 @@ export const Terminal: React.FC = () => {
   const [latestLog, setLatestLog] = useState<ScanLog | null>(null);
   const [activeHighlight, setActiveHighlight] = useState(false);
   const [socketConnected, setSocketConnected] = useState(socket.connected);
+  const [errorStatus, setErrorStatus] = useState<string | null>(null);
   
   const [soundEnabled, setSoundEnabled] = useState(() => {
     const saved = localStorage.getItem('terminal_sound_enabled');
@@ -55,6 +56,7 @@ export const Terminal: React.FC = () => {
 
   const soundEnabledRef = useRef(soundEnabled);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
@@ -63,6 +65,7 @@ export const Terminal: React.FC = () => {
   useEffect(() => {
     return () => {
       if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
 
@@ -137,6 +140,9 @@ export const Terminal: React.FC = () => {
 
     // Escuchamos cuando el Backend confirma que impactó una asistencia en SQLite
     socket.on('fichada-exitosa', (freshLog: ScanLog) => {
+      setErrorStatus(null);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+
       // Agregamos el nuevo log arriba de todo en la lista de movimientos
       setLogs((prevLogs) => [freshLog, ...prevLogs]);
       setLatestLog(freshLog);
@@ -154,8 +160,16 @@ export const Terminal: React.FC = () => {
     });
 
     // Escuchamos si salta un error de huella inválida en el sensor para tirar el beep de error
-    socket.on('fichada-error', () => {
+    socket.on('fichada-error', (data?: { message: string }) => {
+      const errMsg = data?.message || 'Huella no registrada o usuario inactivo';
+      setErrorStatus(errMsg);
+      setActiveHighlight(false);
       playBeep('error');
+
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => {
+        setErrorStatus(null);
+      }, 4000);
     });
 
     return () => {
@@ -215,7 +229,34 @@ export const Terminal: React.FC = () => {
       <div className="terminal-grid">
         {/* Left Side: Real-Time Scanner Status / Highlight confirmation */}
         <section className="terminal-kiosk-status">
-          {activeHighlight && latestLog ? (
+          {errorStatus ? (
+            <div className="kiosk-card scan-notification-card check-out animate-pulse-error" style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(9, 13, 22, 0.9) 100%)' }}>
+              <div className="scan-card-decor" style={{ backgroundColor: 'var(--color-late)' }}></div>
+              
+              <div className="scan-card-header">
+                <div className="scan-icon-container" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-late)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                  <AlertCircle size={64} />
+                </div>
+                <div className="scan-action-badge" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--color-late)' }}>
+                  ACCESO DENEGADO
+                </div>
+              </div>
+
+              <div className="scan-card-body" style={{ textAlign: 'center', margin: '40px 0' }}>
+                <h2 className="scan-teacher-name" style={{ color: 'var(--color-late)' }}>Huella no registrada</h2>
+                <p className="scan-teacher-subject" style={{ marginTop: '12px', fontSize: '15px' }}>
+                  {errorStatus}
+                </p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '24px', opacity: 0.8 }}>
+                  Por favor, consulte con la administración para dar de alta su registro biométrico.
+                </p>
+              </div>
+              
+              <div className="scan-card-footer">
+                <span className="success-pulse-banner" style={{ color: 'var(--color-late)' }}>ERROR DE VALIDACIÓN</span>
+              </div>
+            </div>
+          ) : activeHighlight && latestLog ? (
             <div className={`kiosk-card scan-notification-card ${latestLog.type === 'in' ? 'check-in' : 'check-out'}`}>
               <div className="scan-card-decor"></div>
               
