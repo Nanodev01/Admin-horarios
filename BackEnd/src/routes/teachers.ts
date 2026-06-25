@@ -39,12 +39,20 @@ router.get('/', async (_req, res) => {
   }
 });
 
-// POST: Crear un nuevo profesor y sus horarios asociados
+// POST: Crear un nuevo profesor y sus horarios asociados (Optimizado en 1 consulta)
 router.post('/', async (req, res) => {
   const { name, dni, subject, entryTime, exitTime, fingerprintId, schedules } = req.body;
   try {
-    // 1. Crear el docente
-    const newTeacher = await prisma.teacher.create({
+    const schedulesList = schedules && typeof schedules === 'object'
+      ? Object.entries(schedules).map(([dayStr, val]: [string, any]) => ({
+          dayNumber: Number(dayStr),
+          entryTime: val.entryTime,
+          exitTime: val.exitTime
+        }))
+      : [];
+
+    // Creamos el docente y sus horarios en una única transacción atómica de Prisma
+    const fullyCreatedTeacher = await prisma.teacher.create({
       data: {
         name,
         dni,
@@ -53,27 +61,11 @@ router.post('/', async (req, res) => {
         exitTime,
         fingerprintId: String(fingerprintId),
         status: 'absent',
-        active: true
-      }
-    });
-
-    // 2. Crear horarios de días si se enviaron
-    if (schedules && typeof schedules === 'object') {
-      const schedulePromises = Object.entries(schedules).map(([dayStr, val]: [string, any]) => {
-        return prisma.daySchedule.create({
-          data: {
-            teacherId: newTeacher.id,
-            dayNumber: Number(dayStr),
-            entryTime: val.entryTime,
-            exitTime: val.exitTime
-          }
-        });
-      });
-      await Promise.all(schedulePromises);
-    }
-
-    const fullyCreatedTeacher = await prisma.teacher.findUnique({
-      where: { id: newTeacher.id },
+        active: true,
+        schedules: {
+          create: schedulesList
+        }
+      },
       include: { schedules: true }
     });
 
@@ -84,13 +76,21 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT: Actualizar un profesor existente y sus horarios
+// PUT: Actualizar un profesor existente y sus horarios (Optimizado en 1 consulta)
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { name, dni, subject, entryTime, exitTime, fingerprintId, active, schedules } = req.body;
   try {
-    // 1. Actualizar docente
-    await prisma.teacher.update({
+    const schedulesList = schedules && typeof schedules === 'object'
+      ? Object.entries(schedules).map(([dayStr, val]: [string, any]) => ({
+          dayNumber: Number(dayStr),
+          entryTime: val.entryTime,
+          exitTime: val.exitTime
+        }))
+      : [];
+
+    // Actualizamos docente, limpiamos horarios viejos e insertamos los nuevos en una sola consulta
+    const fullyUpdatedTeacher = await prisma.teacher.update({
       where: { id },
       data: {
         name,
@@ -99,33 +99,12 @@ router.put('/:id', async (req, res) => {
         entryTime,
         exitTime,
         fingerprintId: String(fingerprintId),
-        active
-      }
-    });
-
-    // 2. Reemplazar horarios
-    if (schedules && typeof schedules === 'object') {
-      // Eliminar antiguos
-      await prisma.daySchedule.deleteMany({
-        where: { teacherId: id }
-      });
-
-      // Crear nuevos
-      const schedulePromises = Object.entries(schedules).map(([dayStr, val]: [string, any]) => {
-        return prisma.daySchedule.create({
-          data: {
-            teacherId: id,
-            dayNumber: Number(dayStr),
-            entryTime: val.entryTime,
-            exitTime: val.exitTime
-          }
-        });
-      });
-      await Promise.all(schedulePromises);
-    }
-
-    const fullyUpdatedTeacher = await prisma.teacher.findUnique({
-      where: { id },
+        active,
+        schedules: {
+          deleteMany: {}, // Limpiar horarios anteriores
+          create: schedulesList
+        }
+      },
       include: { schedules: true }
     });
 
@@ -136,14 +115,52 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE: Eliminar un profesor
+// DELETE: Eliminar un profesor de la base de datos y de la memoria física del sensor
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
+    // 1. Buscar el docente para obtener su fingerprintId
+    const teacher = await prisma.teacher.findUnique({
+      where: { id }
+    });
+
+    if (teacher) {
+      console.log(`🗑️ Iniciando borrado de huella física ID ${teacher.fingerprintId} para el docente ${teacher.name}`);
+      
+      // 2. Detener temporalmente lector.py
+      await stopLector();
+
+      let pyCommand = 'python3';
+      if (process.platform === 'win32') pyCommand = 'python';
+
+      // 3. Ejecutar script de borrado físico en el hardware
+      await new Promise<void>((resolve) => {
+        const child = spawn(pyCommand, ['hardware/borrar_huella.py', String(teacher.fingerprintId)]);
+        
+        child.stdout.on('data', (data) => {
+          console.log(`[Borrar-Python]: ${data.toString().trim()}`);
+        });
+
+        child.stderr.on('data', (data) => {
+          console.error(`[Borrar-Python-Error]: ${data.toString().trim()}`);
+        });
+
+        child.on('close', (code) => {
+          console.log(`🗑️ Borrado físico finalizado con código: ${code}`);
+          resolve();
+        });
+      });
+
+      // 4. Reiniciar lector.py
+      startLector();
+    }
+
+    // 5. Eliminar el registro de la base de datos SQLite (las claves foráneas eliminarán en cascada los horarios/logs)
     await prisma.teacher.delete({
       where: { id }
     });
-    res.json({ success: true, message: 'Docente eliminado correctamente de la base de datos.' });
+
+    res.json({ success: true, message: 'Docente eliminado correctamente de la base de datos y de la memoria del sensor.' });
   } catch (error) {
     console.error("Error al eliminar profesor:", error);
     res.status(500).json({ error: 'Error al eliminar al docente.' });
