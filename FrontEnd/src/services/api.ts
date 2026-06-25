@@ -1,10 +1,13 @@
 // frontend/src/services/api.ts
 import type { Teacher, ScanLog } from '../types';
 
-// Mientras programás en tu casa usás localhost. 
-// Cuando lo pases a la escuela, ponés la IP fija de la Raspberry (ej: 'http://192.168.1.50:3000/api')
-const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const API_BASE_URL = `http://${hostname}:3000/api`;
+// Si estás corriendo el frontend en tu laptop/PC de desarrollo y el backend en la Raspberry,
+// configurá acá la IP fija de la Raspberry.
+// Si corrés todo en la misma máquina, o si ya está en producción y accedés por su IP, 
+// podés usar: typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+export const BACKEND_IP = '192.168.1.103'; 
+
+export const API_BASE_URL = `http://${BACKEND_IP}:3000/api`;
 
 export const apiService = {
   // ==========================================

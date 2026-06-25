@@ -1,8 +1,7 @@
-
 import { io } from 'socket.io-client';
+import { BACKEND_IP } from './api';
 
-const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const SOCKET_URL = `http://${hostname}:3000`;
+const SOCKET_URL = `http://${BACKEND_IP}:3000`;
 
 export const socket = io(SOCKET_URL, {
   autoConnect: true,

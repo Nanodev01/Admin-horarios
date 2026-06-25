@@ -1059,6 +1059,13 @@ button, input, select {
   border-radius: 99px;
   font-size: 13px;
   font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.terminal-header-badge.offline {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-late);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .pulse-indicator-dot {
@@ -1068,6 +1075,12 @@ button, input, select {
   background-color: var(--color-present);
   box-shadow: 0 0 8px var(--color-present);
   animation: pulse-glow 1.5s infinite alternate;
+  transition: all 0.3s ease;
+}
+
+.pulse-indicator-dot.offline {
+  background-color: var(--color-late);
+  box-shadow: 0 0 8px var(--color-late);
 }
 
 .terminal-grid {

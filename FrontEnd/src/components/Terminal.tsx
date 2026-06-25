@@ -19,6 +19,7 @@ export const Terminal: React.FC = () => {
   const [latestLog, setLatestLog] = useState<ScanLog | null>(null);
   const [activeHighlight, setActiveHighlight] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [socketConnected, setSocketConnected] = useState(socket.connected);
   
   const [soundEnabled, setSoundEnabled] = useState(() => {
     const saved = localStorage.getItem('terminal_sound_enabled');
@@ -87,14 +88,29 @@ export const Terminal: React.FC = () => {
 
   // 📻 2. AQUÍ CONECTAMOS EL WEBSOCKET (Reemplaza al StorageEvent)
   useEffect(() => {
-    // Log de estado de conexión
-    socket.on('connect', () => {
+    const onConnect = () => {
       console.log('📡 Terminal conectada al servidor Socket.io con éxito!');
-    });
+      setSocketConnected(true);
+    };
 
-    socket.on('connect_error', (error) => {
+    const onDisconnect = () => {
+      console.log('❌ Terminal desconectada del servidor Socket.io');
+      setSocketConnected(false);
+    };
+
+    const onConnectError = (error: any) => {
       console.error('🚨 Error de conexión en Socket.io de Terminal:', error);
-    });
+      setSocketConnected(false);
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onConnectError);
+
+    // Si ya está conectado al montar, marcar como conectado
+    if (socket.connected) {
+      setSocketConnected(true);
+    }
 
     // Escuchamos cuando el Backend confirma que impactó una asistencia en SQLite
     socket.on('fichada-exitosa', (freshLog: ScanLog) => {
@@ -120,8 +136,9 @@ export const Terminal: React.FC = () => {
     });
 
     return () => {
-      socket.off('connect');
-      socket.off('connect_error');
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onConnectError);
       socket.off('fichada-exitosa');
       socket.off('fichada-error');
     };
@@ -167,9 +184,9 @@ export const Terminal: React.FC = () => {
             <span>{soundEnabled ? 'Sonido Activado' : 'Sonido Silenciado'}</span>
           </button>
           
-          <div className="terminal-header-badge">
-            <span className="pulse-indicator-dot"></span>
-            En línea
+          <div className={`terminal-header-badge ${socketConnected ? 'online' : 'offline'}`}>
+            <span className={`pulse-indicator-dot ${socketConnected ? 'connected' : 'disconnected'}`}></span>
+            {socketConnected ? 'En línea' : 'Desconectado'}
           </div>
         </div>
       </header>
