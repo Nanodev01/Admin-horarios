@@ -1,18 +1,18 @@
 # backend/hardware/lector.py
 import time
-import board
-import busio
+#import board
+#import busio
 import adafruit_fingerprint
 import requests
 
 # 1. CONFIGURACIÓN DEL PUERTO SERIE DEL SENSOR AS608
 # Si conectás el lector por los pines GPIO de la Raspberry (TX/RX):
-uart = busio.UART(board.TX, board.RX, baudrate=57600)
+#uart = busio.UART(board.TX, board.RX, baudrate=57600)
 
 # NOTA: Si usás un adaptador USB a Serial para conectar el AS608 por USB, 
 # en Linux se suele usar la librería 'serial' común apuntando a '/dev/ttyUSB0':
-# import serial
-# uart = serial.Serial("/dev/ttyUSB0", baudrate=57600, timeout=1)
+import serial
+uart = serial.Serial("/dev/serial0", baudrate=57600, timeout=1)
 
 finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
 
@@ -71,7 +71,7 @@ while True:
         time.sleep(2)
         print("🚀 Esperando huella...\n")
         
-    elif resultado_imagen == adafruit_fingerprint.ERR_NO_FINGER:
+    elif resultado_imagen == adafruit_fingerprint.NOFINGER:
         # Si no hay ningún dedo apoyado, el bucle gira rápido pero con un mini respiro (0.1s)
         # para no prender fuego el procesador de la Raspberry Pi
         time.sleep(0.1)
