@@ -53,6 +53,7 @@ export const TeachersList: React.FC<TeachersListProps> = ({
   // Biometric enrollment state
   const [enrollStatus, setEnrollStatus] = useState<{ step: number; message: string; error?: boolean; success?: boolean } | null>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Listen to Socket.io events for the physical enrollment progress
   useEffect(() => {
@@ -113,6 +114,7 @@ export const TeachersList: React.FC<TeachersListProps> = ({
     setFingerprintId(String(nextId));
     setEnrollStatus(null);
     setIsEnrolling(false);
+    setIsSubmitting(false);
     setFormError('');
     setIsModalOpen(true);
   };
@@ -149,6 +151,7 @@ export const TeachersList: React.FC<TeachersListProps> = ({
     setSchedulesState(newState);
     setFingerprintId(teacher.fingerprintId);
     setFormError('');
+    setIsSubmitting(false);
     setIsModalOpen(true);
   };
 
@@ -156,11 +159,14 @@ export const TeachersList: React.FC<TeachersListProps> = ({
     handleCancelEnroll();
     setIsModalOpen(false);
     setEditingTeacher(null);
+    setIsSubmitting(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+
+    if (isSubmitting) return;
 
     // Validations
     if (!name.trim()) return setFormError('El nombre es obligatorio.');

@@ -90,6 +90,17 @@ router.post('/scan', async (req, res) => {
     const type = teacher.status === 'present' ? 'out' : 'in';
     const now = new Date();
     const timestamp = now.toISOString();
+
+    // Prevención de doble fichada (Anti-passback / Debounce de 15 segundos)
+    if (teacher.lastScanTime) {
+      const diffMs = now.getTime() - new Date(teacher.lastScanTime).getTime();
+      const diffSecs = diffMs / 1000;
+      if (diffSecs < 15) {
+        console.log(`⚠️ [Anti-Passback] Ignorando fichada repetida de ${teacher.name} (hace ${diffSecs.toFixed(1)}s)`);
+        return res.status(200).json({ success: true, message: 'Fichada duplicada omitida por seguridad.' });
+      }
+    }
+
     const status = calculateStatus(teacher, type, now);
     
     // Generar un hash de seguridad único e inalterable para el comprobante (SHA-256)

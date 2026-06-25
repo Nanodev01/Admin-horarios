@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from './services/api'; // 🔌 Cambiamos 'db' local por nuestro servicio HTTP
+import { socket } from './services/socket'; // 📻 Importamos WebSocket para tiempo real
 import type { Teacher, ScanLog } from './types';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
@@ -23,7 +24,7 @@ function App() {
   const [systemTime, setSystemTime] = useState(new Date());
   const [simulatedTimeStr, setSimulatedTimeStr] = useState('08:00');
 
-  // 📥 1. CARGA INICIAL DE DATOS DESDE SQLITE (EXPRESS)
+  // 📥 1. CARGA INICIAL DE DATOS DESDE SQLITE (EXPRESS) - Solo una vez al montar
   useEffect(() => {
     apiService.getTeachers()
       .then(data => setTeachers(data))
@@ -32,7 +33,30 @@ function App() {
     apiService.getLogs()
       .then(data => setLogs(data))
       .catch(() => addToast('Error al cargar el historial de accesos.', 'error'));
-  }, [currentTab]); // Recarga datos frescos cuando el usuario cambia de pestaña
+  }, []);
+
+  // 📻 2. ENLACE WEBSOCKET PARA ACTUALIZAR TABLERO Y PROFESORES EN TIEMPO REAL
+  useEffect(() => {
+    socket.on('fichada-exitosa', (freshLog: ScanLog) => {
+      // Insertar nuevo log arriba
+      setLogs((prev) => [freshLog, ...prev]);
+
+      // Modificar el estado del profesor (presente/ausente) y su última hora en la lista local
+      setTeachers((prev) => prev.map(t => 
+        t.id === freshLog.teacherId
+          ? { 
+              ...t, 
+              status: freshLog.type === 'in' ? 'present' : 'absent',
+              lastScanTime: freshLog.timestamp 
+            }
+          : t
+      ));
+    });
+
+    return () => {
+      socket.off('fichada-exitosa');
+    };
+  }, []);
 
   // Reloj digital (Intacto)
   useEffect(() => {
