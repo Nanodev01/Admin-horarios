@@ -121,18 +121,6 @@ function App() {
     }
   };
 
-  // 🔬 MODIFICACIÓN: El simulador de software (Hacer click en el botón dactilar de pruebas)
-  const handleBiometricScan = async (fingerprintId: string) => {
-    try {
-      // Como el simulador web no pasa por Python, dispara el trigger directo al backend
-      // El backend procesará los datos, generará el WS y nosotros refrescaremos al cambiar de pestaña
-      addToast(`Simulando pulso dactilar para ID #${fingerprintId}...`, 'info');
-      return { success: true, message: "Enviado al servidor" };
-    } catch {
-      return { success: false, message: "Error de red" };
-    }
-  };
-
   const renderActiveTab = () => {
     switch (currentTab) {
       case 'dashboard':

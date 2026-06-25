@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ScanLog, Teacher } from '../types';
+import type { ScanLog } from '../types';
 import { apiService } from '../services/api'; // 🔌 Traemos las peticiones iniciales
 import { socket } from '../services/socket';   // 📻 Traemos el sintonizador de WebSockets
 import { 
