@@ -14,11 +14,38 @@ import {
   Info
 } from 'lucide-react';
 
+// 🕰️ Subcomponente aislado para el reloj. 
+// De esta forma, el tic-tac de cada segundo solo re-renderiza este pequeño componente 
+// y no toda la pantalla de la terminal (evitando diffs de Virtual DOM costosos en la Raspberry Pi).
+const KioskClock: React.FC = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatFullDate = (date: Date) => {
+    return date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+  };
+
+  return (
+    <div className="giant-clock-container">
+      <div className="giant-time">
+        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+      </div>
+      <div className="giant-date">
+        <Calendar size={18} className="text-secondary" style={{ marginRight: '8px' }} />
+        {formatFullDate(currentTime)}
+      </div>
+    </div>
+  );
+};
+
 export const Terminal: React.FC = () => {
   const [logs, setLogs] = useState<ScanLog[]>([]);
   const [latestLog, setLatestLog] = useState<ScanLog | null>(null);
   const [activeHighlight, setActiveHighlight] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [socketConnected, setSocketConnected] = useState(socket.connected);
   
   const [soundEnabled, setSoundEnabled] = useState(() => {
@@ -80,11 +107,7 @@ export const Terminal: React.FC = () => {
     }
   };
 
-  // Reloj digital (Intacto)
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+
 
   // 📻 2. AQUÍ CONECTAMOS EL WEBSOCKET (Reemplaza al StorageEvent)
   useEffect(() => {
@@ -150,10 +173,7 @@ export const Terminal: React.FC = () => {
     localStorage.setItem('terminal_sound_enabled', String(newVal));
   };
 
-  // Formateadores de fecha (Intactos)
-  const formatFullDate = (date: Date) => {
-    return date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
-  };
+
   const formatLogTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   };
@@ -253,15 +273,7 @@ export const Terminal: React.FC = () => {
           ) : (
             <div className="kiosk-card scan-idle-card">
               {/* Massive clock for kiosk display */}
-              <div className="giant-clock-container">
-                <div className="giant-time">
-                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                </div>
-                <div className="giant-date">
-                  <Calendar size={18} className="text-secondary" style={{ marginRight: '8px' }} />
-                  {formatFullDate(currentTime)}
-                </div>
-              </div>
+              <KioskClock />
 
               <div className="kiosk-idle-content">
                 <div className="fingerprint-scan-radar">
