@@ -10,7 +10,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
   const menuItems = [
     { id: 'dashboard', label: 'Tablero Principal', icon: LayoutDashboard },
     { id: 'teachers', label: 'Personal Docente', icon: Users },
-    { id: 'biometrics', label: 'Lector Biométrico', icon: Fingerprint },
     { id: 'logs', label: 'Registro de Accesos', icon: History }
   ];
 

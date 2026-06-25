@@ -129,7 +129,7 @@ router.post('/scan', async (req, res) => {
       currentStatus: updatedTeacher.status
     });
 
-    return res.status(201).json(newLog);
+    return res.status(200).json(newLog);
 
   } catch (error) {
     console.error("Error en /scan:", error);
