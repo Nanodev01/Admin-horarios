@@ -3,7 +3,7 @@ import type { ScanLog } from '../types';
 export function printReceipt(log: ScanLog, dni: string) {
   const dateObj = new Date(log.timestamp);
   const formattedDate = dateObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, ' / ');
-  const formattedTime = dateObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const formattedTime = dateObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
   const isEntry = log.type === 'in';
   const typeStr = isEntry ? 'INGRESO / ENTRADA' : 'EGRESO / SALIDA';

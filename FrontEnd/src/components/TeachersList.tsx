@@ -245,6 +245,41 @@ export const TeachersList: React.FC<TeachersListProps> = ({
     t.fingerprintId.includes(searchQuery)
   );
 
+  const renderTimeSelects = (
+    value: string,
+    onChange: (newValue: string) => void
+  ) => {
+    const [hour, minute] = value.split(':');
+    const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const minutesList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+    return (
+      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+        <select
+          className="form-control"
+          style={{ height: '32px', padding: '4px 8px', fontSize: '12px', width: '75px' }}
+          value={hour}
+          onChange={(e) => onChange(`${e.target.value}:${minute}`)}
+        >
+          {hoursList.map(h => (
+            <option key={h} value={h}>{h} hs</option>
+          ))}
+        </select>
+        <span style={{ color: 'var(--text-muted)' }}>:</span>
+        <select
+          className="form-control"
+          style={{ height: '32px', padding: '4px 8px', fontSize: '12px', width: '65px' }}
+          value={minute}
+          onChange={(e) => onChange(`${hour}:${e.target.value}`)}
+        >
+          {minutesList.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
   return (
     <div className="teachers-list-container">
       {/* Search and Action Header */}
@@ -551,35 +586,21 @@ export const TeachersList: React.FC<TeachersListProps> = ({
                           <div className="form-row">
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Entrada</label>
-                              <input
-                                type="time"
-                                className="form-control"
-                                style={{ height: '32px', padding: '4px 8px', fontSize: '12px' }}
-                                value={sched.entryTime}
-                                onChange={(e) => {
-                                  setSchedulesState(prev => ({
-                                    ...prev,
-                                    [selectedDayTab]: { ...prev[selectedDayTab], entryTime: e.target.value }
-                                  }));
-                                }}
-                                required={sched.active}
-                              />
+                              {renderTimeSelects(sched.entryTime, (newVal) => {
+                                setSchedulesState(prev => ({
+                                  ...prev,
+                                  [selectedDayTab]: { ...prev[selectedDayTab], entryTime: newVal }
+                                }));
+                              })}
                             </div>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Salida</label>
-                              <input
-                                type="time"
-                                className="form-control"
-                                style={{ height: '32px', padding: '4px 8px', fontSize: '12px' }}
-                                value={sched.exitTime}
-                                onChange={(e) => {
-                                  setSchedulesState(prev => ({
-                                    ...prev,
-                                    [selectedDayTab]: { ...prev[selectedDayTab], exitTime: e.target.value }
-                                  }));
-                                }}
-                                required={sched.active}
-                              />
+                              {renderTimeSelects(sched.exitTime, (newVal) => {
+                                setSchedulesState(prev => ({
+                                  ...prev,
+                                  [selectedDayTab]: { ...prev[selectedDayTab], exitTime: newVal }
+                                }));
+                              })}
                             </div>
                           </div>
                         ) : (

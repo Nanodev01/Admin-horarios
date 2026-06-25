@@ -238,7 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {logs.slice(0, 5).map((log) => {
-              const logTime = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const logTime = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
               const isEntry = log.type === 'in';
               
               let logBadge = 'normal';

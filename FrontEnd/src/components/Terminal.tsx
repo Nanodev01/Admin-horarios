@@ -155,7 +155,7 @@ export const Terminal: React.FC = () => {
     return date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
   };
   const formatLogTime = (isoString: string) => {
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   };
   const formatLogDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -255,7 +255,7 @@ export const Terminal: React.FC = () => {
               {/* Massive clock for kiosk display */}
               <div className="giant-clock-container">
                 <div className="giant-time">
-                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
                 </div>
                 <div className="giant-date">
                   <Calendar size={18} className="text-secondary" style={{ marginRight: '8px' }} />

@@ -167,7 +167,29 @@ function App() {
               </div>
               <input type="checkbox" id="sim-time-checkbox" checked={isSimulatingTime} onChange={(e) => setIsSimulatingTime(e.target.checked)} style={{ cursor: 'pointer' }} />
               {isSimulatingTime ? (
-                <input type="time" className="form-control" style={{ height: '26px', width: '80px', padding: '2px 6px', fontSize: '11px', backgroundColor: 'rgba(255, 255, 255, 0.05)' }} value={simulatedTimeStr} onChange={(e) => setSimulatedTimeStr(e.target.value)} />
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <select
+                    className="form-control"
+                    style={{ height: '26px', width: '70px', padding: '2px 4px', fontSize: '11px', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-primary)' }}
+                    value={simulatedTimeStr.split(':')[0]}
+                    onChange={(e) => setSimulatedTimeStr(`${e.target.value}:${simulatedTimeStr.split(':')[1]}`)}
+                  >
+                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
+                      <option key={h} value={h}>{h} hs</option>
+                    ))}
+                  </select>
+                  <span style={{ color: 'var(--text-muted)' }}>:</span>
+                  <select
+                    className="form-control"
+                    style={{ height: '26px', width: '55px', padding: '2px 4px', fontSize: '11px', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-primary)' }}
+                    value={simulatedTimeStr.split(':')[1]}
+                    onChange={(e) => setSimulatedTimeStr(`${simulatedTimeStr.split(':')[0]}:${e.target.value}`)}
+                  >
+                    {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
               ) : (
                 <span style={{ color: 'var(--color-present)', fontWeight: 'bold' }}>Tiempo Real</span>
               )}
@@ -175,7 +197,7 @@ function App() {
 
             <div className="system-clock">
               <Clock size={16} className="text-secondary" />
-              <span>{systemTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{systemTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
             </div>
           </div>
         </header>

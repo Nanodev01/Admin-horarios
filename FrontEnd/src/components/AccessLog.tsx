@@ -13,6 +13,10 @@ export const AccessLog: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'in' | 'out'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'normal' | 'late' | 'early_exit'>('all');
 
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportDateOption, setExportDateOption] = useState<'all' | 'last' | 'particular'>('all');
+  const [exportParticularDate, setExportParticularDate] = useState('');
+
   // 📥 1. Cargar el historial inicial desde SQLite mediante Express
   useEffect(() => {
     // Traemos los logs
@@ -51,29 +55,70 @@ export const AccessLog: React.FC = () => {
     return matchesSearch && matchesType && matchesStatus;
   });
 
+  const getLocalDateStr = (isoString: string): string => {
+    const d = new Date(isoString);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getLatestLogDateStr = (): string => {
+    if (logs.length === 0) return '';
+    const latestTimestamp = logs.reduce((max, log) => {
+      return log.timestamp > max ? log.timestamp : max;
+    }, logs[0].timestamp);
+    return getLocalDateStr(latestTimestamp);
+  };
+
+  const getLogsToExport = (): ScanLog[] => {
+    if (exportDateOption === 'last') {
+      const latestDateStr = getLatestLogDateStr();
+      if (!latestDateStr) return [];
+      return filteredLogs.filter(log => getLocalDateStr(log.timestamp) === latestDateStr);
+    } else if (exportDateOption === 'particular') {
+      if (!exportParticularDate) return [];
+      return filteredLogs.filter(log => getLocalDateStr(log.timestamp) === exportParticularDate);
+    }
+    return filteredLogs;
+  };
+
   const handleExport = () => {
-    const headers = ['Fecha', 'Hora', 'Docente', 'Materia', 'Huella ID', 'Tipo', 'Estado'];
-    const rows = filteredLogs.map(log => {
+    setShowExportModal(true);
+  };
+
+  const executeExport = (logsToExport: ScanLog[]) => {
+    const headers = ['Fecha', 'Hora', 'Docente', 'Materia', 'Huella ID', 'Tipo', 'Estado', 'Observaciones'];
+    const rows = logsToExport.map(log => {
       const dateObj = new Date(log.timestamp);
       const date = dateObj.toLocaleDateString();
-      const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
       const type = log.type === 'in' ? 'Entrada' : 'Salida';
       
       let status = 'Normal';
       if (log.status === 'late') status = 'Tarde';
       else if (log.status === 'early_exit') status = 'Salida Anticipada';
 
-      return [date, time, `"${log.teacherName}"`, `"${log.teacherSubject}"`, log.fingerprintId, type, status];
+      return [date, time, `"${log.teacherName}"`, `"${log.teacherSubject}"`, log.fingerprintId, type, status, '""'];
     });
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `registro_accesos_escuela_${new Date().toISOString().substring(0, 10)}.csv`);
+    
+    let filenameSuffix = 'todos';
+    if (exportDateOption === 'last') {
+      filenameSuffix = `ultimo_dia_${getLatestLogDateStr()}`;
+    } else if (exportDateOption === 'particular') {
+      filenameSuffix = `dia_${exportParticularDate}`;
+    }
+    
+    link.setAttribute("download", `registro_accesos_${filenameSuffix}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setShowExportModal(false);
   };
 
   const handleClear = async () => {
@@ -218,7 +263,8 @@ export const AccessLog: React.FC = () => {
                 const formattedTime = dateObj.toLocaleTimeString(undefined, { 
                   hour: '2-digit', 
                   minute: '2-digit',
-                  second: '2-digit'
+                  second: '2-digit',
+                  hour12: false
                 });
                 
                 const isEntry = log.type === 'in';
@@ -269,6 +315,101 @@ export const AccessLog: React.FC = () => {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+      {showExportModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '440px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Exportar Historial (CSV)</h3>
+              <button className="modal-close" onClick={() => setShowExportModal(false)} style={{ fontSize: '24px' }}>
+                &times;
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '13px' }}>
+                Seleccione qué registros desea exportar al archivo CSV.
+              </p>
+              
+              <div className="export-options-list">
+                <label className={`export-option-card ${exportDateOption === 'all' ? 'active' : ''}`}>
+                  <input 
+                    type="radio" 
+                    name="exportDateOption" 
+                    value="all" 
+                    checked={exportDateOption === 'all'} 
+                    onChange={() => setExportDateOption('all')} 
+                  />
+                  <div className="option-info">
+                    <strong>Todos los registros</strong>
+                    <span>Exporta el historial completo ({filteredLogs.length} filas)</span>
+                  </div>
+                </label>
+
+                <label className={`export-option-card ${exportDateOption === 'last' ? 'active' : ''}`}>
+                  <input 
+                    type="radio" 
+                    name="exportDateOption" 
+                    value="last" 
+                    checked={exportDateOption === 'last'} 
+                    disabled={logs.length === 0}
+                    onChange={() => setExportDateOption('last')} 
+                  />
+                  <div className="option-info">
+                    <strong>Último día con actividad</strong>
+                    <span>{getLatestLogDateStr() ? `Exportar día: ${getLatestLogDateStr()}` : 'Sin actividad registrada'}</span>
+                  </div>
+                </label>
+
+                <label className={`export-option-card ${exportDateOption === 'particular' ? 'active' : ''}`}>
+                  <input 
+                    type="radio" 
+                    name="exportDateOption" 
+                    value="particular" 
+                    checked={exportDateOption === 'particular'} 
+                    onChange={() => setExportDateOption('particular')} 
+                  />
+                  <div className="option-info">
+                    <strong>Un día en particular</strong>
+                    <span>Seleccione un día específico del calendario</span>
+                  </div>
+                </label>
+              </div>
+
+              {exportDateOption === 'particular' && (
+                <div style={{ marginTop: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Seleccione la fecha:
+                  </label>
+                  <input 
+                    type="date" 
+                    className="form-control" 
+                    value={exportParticularDate} 
+                    onChange={(e) => setExportParticularDate(e.target.value)} 
+                    max={new Date().toISOString().substring(0, 10)}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowExportModal(false)}>
+                Cancelar
+              </button>
+              <button 
+                className="btn btn-primary btn-sm"
+                onClick={() => executeExport(getLogsToExport())}
+                disabled={
+                  (exportDateOption === 'last' && !getLatestLogDateStr()) ||
+                  (exportDateOption === 'particular' && !exportParticularDate) ||
+                  getLogsToExport().length === 0
+                }
+              >
+                Exportar ({getLogsToExport().length})
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
