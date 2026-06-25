@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Teacher } from '../types';
 import { Plus, Edit, Trash2, X, Search, Clock, Fingerprint, Users } from 'lucide-react';
+import { apiService } from '../services/api';
+import { socket } from '../services/socket';
 
 const DAYS_OF_WEEK = [
   { id: 1, name: 'Lunes', shortName: 'Lun' },
@@ -48,6 +50,45 @@ export const TeachersList: React.FC<TeachersListProps> = ({
   const [fingerprintId, setFingerprintId] = useState('');
   const [formError, setFormError] = useState('');
 
+  // Biometric enrollment state
+  const [enrollStatus, setEnrollStatus] = useState<{ step: number; message: string; error?: boolean; success?: boolean } | null>(null);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+
+  // Listen to Socket.io events for the physical enrollment progress
+  useEffect(() => {
+    socket.on('enroll-step', (data: { step: number; message: string; error?: boolean; success?: boolean }) => {
+      setEnrollStatus(data);
+      if (data.error || data.success) {
+        setIsEnrolling(false);
+      }
+    });
+
+    return () => {
+      socket.off('enroll-step');
+    };
+  }, []);
+
+  const handleStartEnroll = async () => {
+    try {
+      setIsEnrolling(true);
+      setEnrollStatus({ step: 0, message: 'Iniciando conexión con el sensor en el servidor...' });
+      await apiService.startEnrollment(fingerprintId);
+    } catch (err: any) {
+      setEnrollStatus({ step: 8, error: true, message: err.message || 'Error al conectar con el servidor.' });
+      setIsEnrolling(false);
+    }
+  };
+
+  const handleCancelEnroll = async () => {
+    try {
+      await apiService.cancelEnrollment();
+      setEnrollStatus(null);
+      setIsEnrolling(false);
+    } catch (err) {
+      console.error("Error al cancelar enrolamiento:", err);
+    }
+  };
+
   const openAddModal = () => {
     setEditingTeacher(null);
     setName('');
@@ -63,12 +104,15 @@ export const TeachersList: React.FC<TeachersListProps> = ({
       6: { active: false, entryTime: '08:00', exitTime: '13:00' },
       7: { active: false, entryTime: '08:00', exitTime: '13:00' }
     });
-    // Auto-generate a logical next fingerprint ID (e.g. max + 1)
-    const maxId = teachers.reduce((max, t) => {
-      const num = parseInt(t.fingerprintId);
-      return isNaN(num) ? max : Math.max(max, num);
-    }, 1000);
-    setFingerprintId(String(maxId + 1));
+    // Auto-generate a logical next fingerprint ID (first unused slot between 1 and 149)
+    const usedIds = new Set(teachers.map(t => parseInt(t.fingerprintId)).filter(num => !isNaN(num)));
+    let nextId = 1;
+    while (usedIds.has(nextId) && nextId <= 149) {
+      nextId++;
+    }
+    setFingerprintId(String(nextId));
+    setEnrollStatus(null);
+    setIsEnrolling(false);
     setFormError('');
     setIsModalOpen(true);
   };
@@ -109,6 +153,7 @@ export const TeachersList: React.FC<TeachersListProps> = ({
   };
 
   const handleCloseModal = () => {
+    handleCancelEnroll();
     setIsModalOpen(false);
     setEditingTeacher(null);
   };
@@ -542,20 +587,111 @@ export const TeachersList: React.FC<TeachersListProps> = ({
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="fingerprintId">ID Biométrico (Asociado al Lector de Huellas)</label>
-                  <input
-                    type="text"
-                    id="fingerprintId"
-                    className="form-control"
-                    placeholder="Ej. 1006"
-                    value={fingerprintId}
-                    onChange={(e) => setFingerprintId(e.target.value)}
-                    disabled={!!editingTeacher} // Keep same hardware link on edit to avoid configuration mismatch
-                    required
-                  />
+                  <label htmlFor="fingerprintId">ID Biométrico (Memoria del Lector)</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="number"
+                      id="fingerprintId"
+                      className="form-control"
+                      placeholder="Ej. 5"
+                      min="1"
+                      max="149"
+                      value={fingerprintId}
+                      onChange={(e) => setFingerprintId(e.target.value)}
+                      disabled={!!editingTeacher || isEnrolling}
+                      required
+                      style={{ flexGrow: 1 }}
+                    />
+                    {!editingTeacher && (
+                      <button
+                        type="button"
+                        className={`btn ${isEnrolling ? 'btn-danger' : 'btn-primary'}`}
+                        onClick={isEnrolling ? handleCancelEnroll : handleStartEnroll}
+                        disabled={!fingerprintId || parseInt(fingerprintId) < 1 || parseInt(fingerprintId) > 149}
+                        style={{ whiteSpace: 'nowrap', height: '42px', padding: '0 16px' }}
+                      >
+                        {isEnrolling ? 'Cancelar' : 'Iniciar Enrolamiento'}
+                      </button>
+                    )}
+                  </div>
                   <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                    * Código numérico único para mapear el sensor de huella dactilar al sistema.
+                    * Código numérico asignado a la memoria interna del lector (rango de 1 a 149).
                   </p>
+
+                  {/* Panel de estado de enrolamiento interactivo */}
+                  {enrollStatus && (
+                    <div
+                      className="enroll-status-panel"
+                      style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        borderRadius: '10px',
+                        backgroundColor: enrollStatus.error 
+                          ? 'rgba(239, 68, 68, 0.08)' 
+                          : enrollStatus.success 
+                            ? 'rgba(34, 197, 94, 0.08)' 
+                            : 'rgba(99, 102, 241, 0.08)',
+                        border: `1px solid ${
+                          enrollStatus.error 
+                            ? 'rgba(239, 68, 68, 0.2)' 
+                            : enrollStatus.success 
+                              ? 'rgba(34, 197, 94, 0.2)' 
+                              : 'rgba(99, 102, 241, 0.2)'
+                        }`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                        <Fingerprint 
+                          size={20} 
+                          className={isEnrolling ? 'pulsing-kiosk-fingerprint' : ''} 
+                          style={{
+                            color: enrollStatus.error 
+                              ? '#f87171' 
+                              : enrollStatus.success 
+                                ? '#4ade80' 
+                                : '#818cf8'
+                          }}
+                        />
+                        <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                          {enrollStatus.success 
+                            ? 'Enrolamiento Exitoso' 
+                            : enrollStatus.error 
+                              ? 'Fallo en Enrolamiento' 
+                              : `Paso ${enrollStatus.step} de 7`}
+                        </strong>
+                      </div>
+                      
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '12px', 
+                        lineHeight: '1.4',
+                        color: enrollStatus.error 
+                          ? '#f87171' 
+                          : enrollStatus.success 
+                            ? '#4ade80' 
+                            : 'var(--text-secondary)'
+                      }}>
+                        {enrollStatus.message}
+                      </p>
+
+                      {isEnrolling && (
+                        <div style={{ 
+                          marginTop: '12px', 
+                          height: '4px', 
+                          backgroundColor: 'rgba(255,255,255,0.05)', 
+                          borderRadius: '2px', 
+                          overflow: 'hidden' 
+                        }}>
+                          <div style={{ 
+                            height: '100%', 
+                            backgroundColor: 'var(--color-primary)', 
+                            width: `${(enrollStatus.step / 7) * 100}%`,
+                            transition: 'width 0.4s ease'
+                          }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -28,6 +28,43 @@ export const apiService = {
     return response.json();
   },
 
+  // PUT: Actualizar los datos de un profesor y sus horarios
+  async updateTeacher(id: string, teacherData: Partial<Teacher>): Promise<Teacher> {
+    const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(teacherData),
+    });
+    if (!response.ok) throw new Error('Error al actualizar el registro del docente');
+    return response.json();
+  },
+
+  // DELETE: Eliminar un profesor de la base de datos
+  async deleteTeacher(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Error al eliminar al docente del servidor');
+  },
+
+  // POST: Iniciar el proceso de enrolamiento físico en el sensor
+  async startEnrollment(fingerprintId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/teachers/enroll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fingerprintId }),
+    });
+    if (!response.ok) throw new Error('Error al iniciar el enrolamiento en el sensor');
+  },
+
+  // POST: Cancelar el proceso de enrolamiento físico activo
+  async cancelEnrollment(): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/teachers/enroll/cancel`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Error al cancelar el enrolamiento');
+  },
+
   // ==========================================
   // 📋 SECCIÓN: LOGS / HISTORIAL (Para la ART)
   // ==========================================

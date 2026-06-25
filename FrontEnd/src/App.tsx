@@ -75,24 +75,25 @@ function App() {
     }
   };
 
-  // 📝 MODIFICACIÓN: Actualizaciones de docentes
+  // 📝 MODIFICACIÓN: Actualizaciones de docentes enviadas al Servidor real
   const handleUpdateTeacher = async (id: string, updatedData: Partial<Teacher>) => {
     try {
-      // Nota: Si tenés la ruta de actualización en Express la llamas acá, sino actualiza el estado local:
-      setTeachers((prev) => prev.map(t => t.id === id ? { ...t, ...updatedData } : t));
-      addToast(`Registro de docente actualizado de forma local.`, 'success');
+      const updated = await apiService.updateTeacher(id, updatedData);
+      setTeachers((prev) => prev.map(t => t.id === id ? updated : t));
+      addToast(`Registro de docente ${updated.name} actualizado con éxito.`, 'success');
     } catch {
-      addToast('Error al actualizar el registro.', 'error');
+      addToast('Error al actualizar el registro del docente en el servidor.', 'error');
     }
   };
 
-  // 🗑️ MODIFICACIÓN: Bajas de docentes
+  // 🗑️ MODIFICACIÓN: Bajas de docentes enviadas al Servidor real
   const handleDeleteTeacher = async (id: string) => {
     try {
+      await apiService.deleteTeacher(id);
       setTeachers((prev) => prev.filter(t => t.id !== id));
-      addToast('Registro del docente removido.', 'info');
+      addToast('Registro del docente removido con éxito de la base de datos.', 'info');
     } catch {
-      addToast('Error al eliminar al docente.', 'error');
+      addToast('Error al eliminar al docente del servidor.', 'error');
     }
   };
 

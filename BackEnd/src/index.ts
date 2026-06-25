@@ -42,9 +42,23 @@ app.use((req, _res, next) => {
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/logs', logRoutes);
 
+import { startLector, stopLector } from './utils/lectorManager.js';
+
 // 6. Arrancar el servidor escuchando hacia afuera (0.0.0.0)
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor Backend e IO corriendo en http://0.0.0.0:${PORT}`);
+  // Levantar lector biométrico de huellas
+  startLector();
+});
+
+// Limpieza de procesos hijos al cerrar el servidor
+process.on('SIGINT', async () => {
+  await stopLector();
+  process.exit(0);
+});
+process.on('SIGTERM', async () => {
+  await stopLector();
+  process.exit(0);
 });
 
 // 📝 Truco TypeScript: Para que req.io no tire error de tipos, agregamos esta declaración abajo:
