@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Teacher, ScanLog } from '../types';
-import { getDayNumber } from '../services/db';
+import { getDayNumber } from '../utils/dateHelper';
 import { 
   Users, 
   CheckCircle2, 

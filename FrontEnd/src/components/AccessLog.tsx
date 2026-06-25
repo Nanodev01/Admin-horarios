@@ -1,17 +1,41 @@
-import React, { useState } from 'react';
-import type { ScanLog } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { ScanLog, Teacher } from '../types';
 import { Search, Calendar, SlidersHorizontal, Trash2, Download } from 'lucide-react';
-import { db } from '../services/db';
+import { apiService } from '../services/api'; 
+import { socket } from '../services/socket'; 
 
-interface AccessLogProps {
-  logs: ScanLog[];
-  onClearLogs: () => void;
-}
-
-export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
+export const AccessLog: React.FC = () => {
+  const [logs, setLogs] = useState<ScanLog[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]); // Guardamos los profesores para sacar el DNI en los tickets
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'in' | 'out'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'normal' | 'late' | 'early_exit'>('all');
+
+  // 📥 1. Cargar el historial inicial desde SQLite mediante Express
+  useEffect(() => {
+    // Traemos los logs
+    apiService.getLogs()
+      .then(data => setLogs(data))
+      .catch(err => console.error("Error al cargar logs:", err));
+
+    // Traemos los profesores para el cruce de datos del DNI
+    apiService.getTeachers()
+      .then(data => setTeachers(data))
+      .catch(err => console.error("Error al cargar profesores:", err));
+  }, []);
+
+  // 📻 2. Sintonizar el WebSocket para actualizar la tabla en vivo
+  useEffect(() => {
+    // Cuando el backend grita que una fichada se guardó con éxito en SQLite
+    socket.on('fichada-exitosa', (nuevoLog: ScanLog) => {
+      // Metemos el nuevo registro arriba de todo en la tabla sin recargar la página
+      setLogs((prevLogs) => [nuevoLog, ...prevLogs]);
+    });
+
+    return () => {
+      socket.off('fichada-exitosa');
+    };
+  }, []);
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch = 
@@ -20,15 +44,13 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
       log.fingerprintId.includes(searchQuery);
 
     const matchesType = typeFilter === 'all' || log.type === typeFilter;
-    
     const matchesStatus = statusFilter === 'all' || log.status === statusFilter;
 
     return matchesSearch && matchesType && matchesStatus;
   });
 
   const handleExport = () => {
-    
-    const headers = ['Fecha', 'Hora', 'Docente', 'Materia', 'Huella ID', 'Tipo', 'Estado', 'Observaciones'];
+    const headers = ['Fecha', 'Hora', 'Docente', 'Materia', 'Huella ID', 'Tipo', 'Estado'];
     const rows = filteredLogs.map(log => {
       const dateObj = new Date(log.timestamp);
       const date = dateObj.toLocaleDateString();
@@ -39,20 +61,10 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
       if (log.status === 'late') status = 'Tarde';
       else if (log.status === 'early_exit') status = 'Salida Anticipada';
 
-      return [
-        date,
-        time,
-        `"${log.teacherName}"`,
-        `"${log.teacherSubject}"`,
-        log.fingerprintId,
-        type,
-        status
-      ];
+      return [date, time, `"${log.teacherName}"`, `"${log.teacherSubject}"`, log.fingerprintId, type, status];
     });
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-      
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -62,43 +74,38 @@ export const AccessLog: React.FC<AccessLogProps> = ({ logs, onClearLogs }) => {
     document.body.removeChild(link);
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (window.confirm('¿Está seguro que desea vaciar todo el historial de accesos? Esta acción no se puede deshacer.')) {
-      onClearLogs();
+      try {
+        // Acá podrías llamar a un método del backend para borrar la tabla de la base de datos real
+        // apiService.clearLogs();
+        setLogs([]);
+      } catch (err) {
+        alert("No se pudo vaciar el historial en el servidor.");
+      }
     }
   };
+
   const handleOpenTeacher = (log: ScanLog) => {
     const dateObj = new Date(log.timestamp);
-    const formattedDate = dateObj.toLocaleDateString('es-AR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    }).replace(/\//g, ' / ');
-    
-    const formattedTime = dateObj.toLocaleTimeString('es-AR', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      second: '2-digit'
-    });
+    const formattedDate = dateObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, ' / ');
+    const formattedTime = dateObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     const isEntry = log.type === 'in';
     const typeStr = isEntry ? 'INGRESO / ENTRADA' : 'EGRESO / SALIDA';
 
     let statusStr = 'VALIDADO / EXITOSO';
-    if (log.status === 'late') {
-      statusStr = 'VALIDADO / INGRESO TARDÍO';
-    } else if (log.status === 'early_exit') {
-      statusStr = 'VALIDADO / SALIDA ANTICIPADA';
-    } else if (log.status === 'outside_schedule') {
-      statusStr = 'VALIDADO / FUERA DE HORARIO';
-    }
+    if (log.status === 'late') statusStr = 'VALIDADO / INGRESO TARDÍO';
+    else if (log.status === 'early_exit') statusStr = 'VALIDADO / SALIDA ANTICIPADA';
+    else if (log.status === 'outside_schedule') statusStr = 'VALIDADO / FUERA DE HORARIO';
 
     const datePart = dateObj.toISOString().slice(0, 10).replace(/-/g, '');
     const cleanId = log.id.replace('l_', '').toUpperCase();
     const trxId = `TRX-${datePart}-${cleanId}`;
-    const teachers = db.getTeachers();
+    
+    // 🔍 Buscamos el DNI de la lista que nos trajimos del Backend real
     const matchedTeacher = teachers.find(t => t.id === log.teacherId);
-    const Dni = matchedTeacher?.dni;
+    const Dni = matchedTeacher?.dni || 'No disponible';
 
 
     const htmlContent = `

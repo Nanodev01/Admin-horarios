@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ScanLog } from '../types';
-import { db } from '../services/db';
+import type { ScanLog, Teacher } from '../types';
+import { apiService } from '../services/api'; // 🔌 Traemos las peticiones iniciales
+import { socket } from '../services/socket';   // 📻 Traemos el sintonizador de WebSockets
 import { 
   Fingerprint, 
   Clock, 
@@ -13,15 +14,9 @@ import {
   Info
 } from 'lucide-react';
 
-interface TerminalProps {
-  initialLogs: ScanLog[];
-}
-
-export const Terminal: React.FC<TerminalProps> = ({ initialLogs }) => {
-  const [logs, setLogs] = useState<ScanLog[]>(initialLogs);
-  const [latestLog, setLatestLog] = useState<ScanLog | null>(() => {
-    return initialLogs.length > 0 ? initialLogs[0] : null;
-  });
+export const Terminal: React.FC = () => {
+  const [logs, setLogs] = useState<ScanLog[]>([]);
+  const [latestLog, setLatestLog] = useState<ScanLog | null>(null);
   const [activeHighlight, setActiveHighlight] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   
@@ -33,49 +28,48 @@ export const Terminal: React.FC<TerminalProps> = ({ initialLogs }) => {
   const soundEnabledRef = useRef(soundEnabled);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync ref with state
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // Clean up timers on unmount
   useEffect(() => {
     return () => {
-      if (highlightTimerRef.current) {
-        clearTimeout(highlightTimerRef.current);
-      }
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
     };
   }, []);
 
-  // AudioContext Beep Generator
+  // 📥 1. Cargar el historial del día apenas se prende la pantalla
+  useEffect(() => {
+    apiService.getLogs()
+      .then(data => {
+        setLogs(data);
+        if (data.length > 0) setLatestLog(data[0]);
+      })
+      .catch(err => console.error("Error al cargar logs iniciales:", err));
+  }, []);
+
+  // 🔊 Tu generador nativo de pitidos (Intacto)
   const playBeep = (type: 'success' | 'error') => {
     if (!soundEnabledRef.current) return;
-    
     try {
       const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioContextClass) return;
-
       const audioCtx = new AudioContextClass();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
       
       if (type === 'success') {
         oscillator.type = 'sine';
-        // Elegant bi-tone success beep
-        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
         gainNode.gain.setValueAtTime(0.06, audioCtx.currentTime);
         oscillator.start();
-        
-        // Schedule pitch change for the bi-tone
-        oscillator.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.08); // E6 note
+        oscillator.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.08);
         oscillator.stop(audioCtx.currentTime + 0.22);
       } else {
         oscillator.type = 'sawtooth';
-        // Low pitch buzz warning sound
-        oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3 note
+        oscillator.frequency.setValueAtTime(220, audioCtx.currentTime);
         gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + 0.3);
@@ -85,92 +79,59 @@ export const Terminal: React.FC<TerminalProps> = ({ initialLogs }) => {
     }
   };
 
-  // Keep digital clock updated
+  // Reloj digital (Intacto)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Sync state & setup highlights when new scan happens
+  // 📻 2. AQUÍ CONECTAMOS EL WEBSOCKET (Reemplaza al StorageEvent)
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'school_scan_logs') {
-        const updatedLogs = db.getLogs();
-        setLogs(updatedLogs);
-        
-        if (updatedLogs.length > 0) {
-          const freshLog = updatedLogs[0];
-          setLatestLog(freshLog);
-          setActiveHighlight(true);
-          
-          // Sound effect helper execution
-          const isError = freshLog.status === 'outside_schedule';
-          playBeep(isError ? 'error' : 'success');
+    // Escuchamos cuando el Backend confirma que impactó una asistencia en SQLite
+    socket.on('fichada-exitosa', (freshLog: ScanLog) => {
+      // Agregamos el nuevo log arriba de todo en la lista de movimientos
+      setLogs((prevLogs) => [freshLog, ...prevLogs]);
+      setLatestLog(freshLog);
+      setActiveHighlight(true);
+      
+      // Ejecutamos tu validador de sonido
+      const isError = freshLog.status === 'outside_schedule';
+      playBeep(isError ? 'error' : 'success');
 
-          // Reset the highlight after 8 seconds
-          if (highlightTimerRef.current) {
-            clearTimeout(highlightTimerRef.current);
-          }
-          highlightTimerRef.current = setTimeout(() => {
-            setActiveHighlight(false);
-          }, 8000);
-        }
-      }
+      // Reseteamos el cartel flotante a los 8 segundos (tal como lo programaste)
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setActiveHighlight(false);
+      }, 8000);
+    });
+
+    // Escuchamos si salta un error de huella inválida en el sensor para tirar el beep de error
+    socket.on('fichada-error', () => {
+      playBeep('error');
+    });
+
+    return () => {
+      socket.off('fichada-exitosa');
+      socket.off('fichada-error');
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const toggleSound = () => {
     const newVal = !soundEnabled;
     setSoundEnabled(newVal);
     localStorage.setItem('terminal_sound_enabled', String(newVal));
-    
-    // Play a brief test beep if sound is enabled
-    if (newVal) {
-      setTimeout(() => {
-        try {
-          const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-          if (!AudioContextClass) return;
-          const audioCtx = new AudioContextClass();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-          gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.05);
-        } catch (e) {
-          console.warn('Test beep failed', e);
-        }
-      }, 50);
-    }
   };
 
-  // Formatter helpers
+  // Formateadores de fecha (Intactos)
   const formatFullDate = (date: Date) => {
-    return date.toLocaleDateString('es-AR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    }).replace(/^\w/, c => c.toUpperCase());
+    return date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
   };
-
   const formatLogTime = (isoString: string) => {
-    const d = new Date(isoString);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
-
   const formatLogDate = (isoString: string) => {
-    const d = new Date(isoString);
-    return d.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(isoString).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
-
   return (
     <div className="terminal-view-container">
       {/* Top Kiosk Header */}
