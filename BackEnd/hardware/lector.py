@@ -25,7 +25,7 @@ finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
 # antes de iniciar la lectura óptica y transmisión serie. De esta forma, evitamos que la Raspberry Pi
 # esté consultando (polling) constantemente por el puerto serie, reduciendo el uso de CPU a casi 0% en reposo.
 GPIO_PIN_TOUCH = 24
-TOUCH_STATE_ACTIVE = 1 # 1 = GPIO.HIGH (Active High), cambialo a 0 si tu módulo es Active-Low
+TOUCH_STATE_ACTIVE = 0 # 1 = GPIO.HIGH (Active High), cambialo a 0 si tu módulo es Active-Low
 has_gpio = False
 
 try:
