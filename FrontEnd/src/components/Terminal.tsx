@@ -87,6 +87,15 @@ export const Terminal: React.FC = () => {
 
   // 📻 2. AQUÍ CONECTAMOS EL WEBSOCKET (Reemplaza al StorageEvent)
   useEffect(() => {
+    // Log de estado de conexión
+    socket.on('connect', () => {
+      console.log('📡 Terminal conectada al servidor Socket.io con éxito!');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('🚨 Error de conexión en Socket.io de Terminal:', error);
+    });
+
     // Escuchamos cuando el Backend confirma que impactó una asistencia en SQLite
     socket.on('fichada-exitosa', (freshLog: ScanLog) => {
       // Agregamos el nuevo log arriba de todo en la lista de movimientos
@@ -111,6 +120,8 @@ export const Terminal: React.FC = () => {
     });
 
     return () => {
+      socket.off('connect');
+      socket.off('connect_error');
       socket.off('fichada-exitosa');
       socket.off('fichada-error');
     };

@@ -3,7 +3,8 @@ import type { Teacher, ScanLog } from '../types';
 
 // Mientras programás en tu casa usás localhost. 
 // Cuando lo pases a la escuela, ponés la IP fija de la Raspberry (ej: 'http://192.168.1.50:3000/api')
-const API_BASE_URL = 'http://192.168.1.103:3000/api';
+const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const API_BASE_URL = `http://${hostname}:3000/api`;
 
 export const apiService = {
   // ==========================================

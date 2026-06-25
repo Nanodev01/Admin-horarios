@@ -12,6 +12,12 @@ const PORT = 3000;
 app.use(cors({ origin: '*' })); // Permite conexiones desde cualquier IP (PC de secretarios, KANO, etc.)
 app.use(express.json());
 
+// Logger de Peticiones HTTP
+app.use((req, _res, next) => {
+  console.log(`📡 [HTTP] ${req.method} ${req.url} - Body: ${JSON.stringify(req.body)}`);
+  next();
+});
+
 // 2. Crear Servidor HTTP combinado para Express y WebSockets
 const httpServer = createServer(app);
 
