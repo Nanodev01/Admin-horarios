@@ -52,7 +52,7 @@ with open(config_path, 'r') as f:
     config = json.load(f)
 
 # 3. Guardar la URL en una variable
-API_URL = f"{config['BACKEND_URL_LOCAL']}/api/logs/scan"
+API_URL = f"{config['BHOST']}/api/logs/scan"
 
 print("⏳ Inicializando sensor AS608...")
 
