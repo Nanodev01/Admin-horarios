@@ -41,7 +41,8 @@ except Exception as e:
 
 # 2. CONFIGURACIÓN DE LA URL DEL BACKEND (NODE.JS)
 # Como corre adentro de la misma Raspberry, le pega a 'localhost'
-API_URL = "http://localhost:3005/api/logs/scan"
+API_IP="192.168.1.112"
+API_URL = f"http://{API_IP}:3005/api/logs/scan"
 
 print("⏳ Inicializando sensor AS608...")
 
