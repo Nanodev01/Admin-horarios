@@ -1,9 +1,12 @@
 # backend/hardware/lector.py
 import time
+import os
+import json
 #import board
 #import busio
 import adafruit_fingerprint
 import requests
+
 
 # 1. CONFIGURACIÓN DEL PUERTO SERIE DEL SENSOR AS608
 # Si conectás el lector por los pines GPIO de la Raspberry (TX/RX):
@@ -41,8 +44,15 @@ except Exception as e:
 
 # 2. CONFIGURACIÓN DE LA URL DEL BACKEND (NODE.JS)
 # Como corre adentro de la misma Raspberry, le pega a 'localhost'
-API_IP="192.168.1.112"
-API_URL = f"http://{API_IP}:3005/api/logs/scan"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+config_path = os.path.join(BASE_DIR, 'config.json')
+
+# 2. Leer el archivo JSON
+with open(config_path, 'r') as f:
+    config = json.load(f)
+
+# 3. Guardar la URL en una variable
+API_URL = f"{config['BACKEND_URL_LOCAL']}/api/logs/scan"
 
 print("⏳ Inicializando sensor AS608...")
 

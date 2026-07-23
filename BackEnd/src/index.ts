@@ -4,9 +4,10 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import teacherRoutes from './routes/teachers';
 import logRoutes from './routes/logs';
+import config from '../config.json'
 
 const app = express();
-const PORT = 3000;
+const PORT = config.PORT;
 
 // 1. Configuración de Middlewares
 app.use(cors({ origin: '*' })); // Permite conexiones desde cualquier IP (PC de secretarios, KANO, etc.)
@@ -32,7 +33,7 @@ export const io = new Server(httpServer, {
 // Canal de comunicación para verificar quién se conecta
 io.on('connection', (socket) => {
   console.log(`🔌 Pantalla conectada al WebSocket (ID: ${socket.id})`);
-  
+
   socket.on('disconnect', () => {
     console.log('❌ Pantalla desconectada del WebSocket');
   });
