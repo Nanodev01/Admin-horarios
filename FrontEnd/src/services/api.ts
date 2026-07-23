@@ -5,15 +5,15 @@ import type { Teacher, ScanLog } from '../types';
 // configurá acá la IP fija de la Raspberry.
 // Si corrés todo en la misma máquina, o si ya está en producción y accedés por su IP, 
 // podés usar: typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-export const BACKEND_IP = '192.168.1.103'; 
+export const BACKEND_IP = '192.168.1.235';
 
-export const API_BASE_URL = `http://${BACKEND_IP}:3000/api`;
+export const API_BASE_URL = `http://${BACKEND_IP}:3005/api`;
 
 export const apiService = {
   // ==========================================
   // 👥 SECCIÓN: PROFESORES (ABM del Admin)
   // ==========================================
-  
+
   // GET: Traer todos los profesores de la base de datos SQLite
   async getTeachers(): Promise<Teacher[]> {
     const response = await fetch(`${API_BASE_URL}/teachers`);
@@ -72,7 +72,7 @@ export const apiService = {
   // ==========================================
   // 📋 SECCIÓN: LOGS / HISTORIAL (Para la ART)
   // ==========================================
-  
+
   // GET: Traer el historial completo de marcados para las tablas de AccessLog.tsx
   async getLogs(): Promise<ScanLog[]> {
     const response = await fetch(`${API_BASE_URL}/logs`);
