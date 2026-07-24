@@ -1,13 +1,13 @@
 // frontend/src/services/api.ts
 import type { Teacher, ScanLog } from '../types';
+import config from '../../../config.json';
 
 // Si estás corriendo el frontend en tu laptop/PC de desarrollo y el backend en la Raspberry,
 // configurá acá la IP fija de la Raspberry.
 // Si corrés todo en la misma máquina, o si ya está en producción y accedés por su IP, 
 // podés usar: typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-export const BACKEND_IP = '192.168.1.235';
 
-export const API_BASE_URL = `http://${BACKEND_IP}:3005/api`;
+export const API_BASE_URL = `http://${config.BIP}:${config.PORT}/api`;
 
 export const apiService = {
   // ==========================================
