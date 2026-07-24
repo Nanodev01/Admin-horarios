@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Teacher } from '../types';
-import { Plus, Edit, Trash2, X, Search, Clock, Fingerprint, Users } from 'lucide-react';
+import { Edit, Trash2, X, Search, Clock, Fingerprint, Users } from 'lucide-react';
 import { apiService } from '../services/api';
 import { socket } from '../services/socket';
 
@@ -31,7 +31,7 @@ export const TeachersList: React.FC<TeachersListProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
 
-  // Form State
+  // Form State (for Edit modal only)
   const [name, setName] = useState('');
   const [dni, setDni] = useState('');
   const [subject, setSubject] = useState('');
@@ -88,35 +88,6 @@ export const TeachersList: React.FC<TeachersListProps> = ({
     } catch (err) {
       console.error("Error al cancelar enrolamiento:", err);
     }
-  };
-
-  const openAddModal = () => {
-    setEditingTeacher(null);
-    setName('');
-    setDni('');
-    setSubject('');
-    setSelectedDayTab(1);
-    setSchedulesState({
-      1: { active: true, entryTime: '08:00', exitTime: '13:00' },
-      2: { active: true, entryTime: '08:00', exitTime: '13:00' },
-      3: { active: true, entryTime: '08:00', exitTime: '13:00' },
-      4: { active: true, entryTime: '08:00', exitTime: '13:00' },
-      5: { active: true, entryTime: '08:00', exitTime: '13:00' },
-      6: { active: false, entryTime: '08:00', exitTime: '13:00' },
-      7: { active: false, entryTime: '08:00', exitTime: '13:00' }
-    });
-    // Auto-generate a logical next fingerprint ID (first unused slot between 1 and 149)
-    const usedIds = new Set(teachers.map(t => parseInt(t.fingerprintId)).filter(num => !isNaN(num)));
-    let nextId = 1;
-    while (usedIds.has(nextId) && nextId <= 149) {
-      nextId++;
-    }
-    setFingerprintId(String(nextId));
-    setEnrollStatus(null);
-    setIsEnrolling(false);
-    setIsSubmitting(false);
-    setFormError('');
-    setIsModalOpen(true);
   };
 
   const openEditModal = (teacher: Teacher) => {
@@ -207,6 +178,7 @@ export const TeachersList: React.FC<TeachersListProps> = ({
       return setFormError('Debe seleccionar al menos un día de trabajo con su respectivo horario.');
     }
 
+    // Edit only — no add path here (handled by AddTeacherPanel)
     if (editingTeacher) {
       onUpdateTeacher(editingTeacher.id, {
         name,
@@ -216,17 +188,6 @@ export const TeachersList: React.FC<TeachersListProps> = ({
         exitTime: firstActiveExit,
         schedules,
         fingerprintId
-      });
-    } else {
-      onAddTeacher({
-        name,
-        dni,
-        subject,
-        entryTime: firstActiveEntry,
-        exitTime: firstActiveExit,
-        schedules,
-        fingerprintId,
-        active: true
       });
     }
 
@@ -283,11 +244,11 @@ export const TeachersList: React.FC<TeachersListProps> = ({
   return (
     <div className="teachers-list-container">
       {/* Search and Action Header */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
           marginBottom: '24px',
           flexWrap: 'wrap',
           gap: '16px'
@@ -302,17 +263,12 @@ export const TeachersList: React.FC<TeachersListProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Search 
-            size={18} 
-            className="text-muted" 
-            style={{ position: 'absolute', left: '12px', top: '12px' }} 
+          <Search
+            size={18}
+            className="text-muted"
+            style={{ position: 'absolute', left: '12px', top: '12px' }}
           />
         </div>
-
-        <button className="btn btn-primary" onClick={openAddModal}>
-          <Plus size={18} />
-          <span>Registrar Nuevo Profesor</span>
-        </button>
       </div>
 
       {/* Grid of Teachers */}

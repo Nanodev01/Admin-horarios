@@ -5,6 +5,7 @@ import type { Teacher, ScanLog } from './types';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { TeachersList } from './components/TeachersList';
+import { AddTeacherPanel } from './components/AddTeacherPanel';
 //import { FingerprintSimulator } from './components/FingerprintSimulator';
 import { AccessLog } from './components/AccessLog';
 import { ToastContainer } from './components/Toast';
@@ -127,6 +128,8 @@ function App() {
         return <Dashboard teachers={teachers} logs={logs} currentTime={systemTime} onNavigateToTab={setCurrentTab} />;
       case 'teachers':
         return <TeachersList teachers={teachers} onAddTeacher={handleAddTeacher} onUpdateTeacher={handleUpdateTeacher} onDeleteTeacher={handleDeleteTeacher} />;
+      case 'add-teacher':
+        return <AddTeacherPanel teachers={teachers} onAddTeacher={handleAddTeacher} />;
       case 'logs':
         return <AccessLog />; // Ahora se auto-gestiona con sus hooks internos
       default:
@@ -136,10 +139,11 @@ function App() {
 
   const getTabTitle = () => {
     switch (currentTab) {
-      case 'dashboard': return 'Tablero Principal';
-      case 'teachers': return 'Gestión del Personal Docente';
-      case 'logs': return 'Registro Histórico de Accesos';
-      default: return 'Escuela López Jordán';
+      case 'dashboard':    return 'Tablero Principal';
+      case 'teachers':     return 'Gestión del Personal Docente';
+      case 'add-teacher':  return 'Registrar Nuevo Docente';
+      case 'logs':         return 'Registro Histórico de Accesos';
+      default:             return 'Escuela López Jordán';
     }
   };
 

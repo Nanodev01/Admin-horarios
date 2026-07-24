@@ -55,6 +55,10 @@
   padding: 0;
 }
 
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-main);
@@ -968,14 +972,14 @@ button, input, select {
    ========================================================================== */
 
 .terminal-view-container {
-  min-height: 100vh;
+  height: 100vh;
   width: 100vw;
-  padding: 40px;
+  padding: 28px 40px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
   background-color: var(--bg-main);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .terminal-header {
@@ -1092,14 +1096,16 @@ button, input, select {
 .terminal-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
-  gap: 32px;
+  gap: 24px;
   flex-grow: 1;
+  min-height: 0; /* critical: allows flex children to shrink below content size */
   align-items: stretch;
 }
 
 .terminal-kiosk-status {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   height: 100%;
 }
 
@@ -1385,6 +1391,8 @@ button, input, select {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0; /* critical for flex shrink */
+  overflow: hidden;
 }
 
 .logs-count-badge {
@@ -1399,8 +1407,8 @@ button, input, select {
 
 .terminal-table-wrapper {
   flex-grow: 1;
+  min-height: 0; /* critical: allows this flex child to scroll internally */
   overflow-y: auto;
-  max-height: 600px;
 }
 
 .terminal-logs-table {
@@ -1533,17 +1541,34 @@ button, input, select {
 }
 
 /* Responsive Terminal Layout */
+
+/* Large tablets / small laptops — still fits in 100vh, just scale typography */
+@media (max-width: 1200px) {
+  .terminal-view-container {
+    padding: 24px 32px;
+    gap: 20px;
+  }
+
+  .giant-time {
+    font-size: 64px;
+  }
+}
+
+/* Tablets / iPad — switch to single column, allow vertical scroll since 2 panels won't fit */
 @media (max-width: 968px) {
   .terminal-view-container {
-    padding: 24px;
-    gap: 24px;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    padding: 20px;
+    gap: 20px;
   }
 
   .terminal-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
-    padding-bottom: 20px;
+    gap: 12px;
+    padding-bottom: 16px;
   }
 
   .terminal-header-controls {
@@ -1553,20 +1578,392 @@ button, input, select {
 
   .terminal-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
+    flex-grow: 0;
+    min-height: auto;
+  }
+
+  .terminal-kiosk-status {
+    height: auto;
+    min-height: auto;
+  }
+
+  .kiosk-card {
+    padding: 28px 24px;
   }
 
   .giant-time {
-    font-size: 60px;
+    font-size: 56px;
+    letter-spacing: -1px;
+  }
+
+  .giant-date {
+    font-size: 15px;
   }
 
   .scan-teacher-name {
     font-size: 26px;
   }
-  
+
+  .scan-details-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .terminal-logs-panel {
+    height: auto;
+    overflow: visible;
+  }
+
+  .terminal-table-wrapper {
+    overflow-y: auto;
+    max-height: 400px;
+  }
+
+  .terminal-logs-table {
+    font-size: 12px;
+  }
+
+  .terminal-logs-table td {
+    padding: 10px 12px;
+  }
+}
+
+/* Phones landscape / small tablets */
+@media (max-width: 640px) {
+  .terminal-view-container {
+    padding: 14px;
+    gap: 16px;
+  }
+
+  .terminal-brand h1 {
+    font-size: 16px;
+  }
+
+  .terminal-brand p {
+    font-size: 11px;
+  }
+
+  .terminal-logo-ring {
+    width: 38px;
+    height: 38px;
+  }
+
+  .btn-sound-toggle span {
+    display: none;
+  }
+
+  .btn-sound-toggle {
+    padding: 8px 10px;
+    border-radius: 50%;
+  }
+
+  .giant-time {
+    font-size: 42px;
+    letter-spacing: -1px;
+  }
+
+  .giant-date {
+    font-size: 13px;
+  }
+
+  .giant-clock-container {
+    margin-bottom: 24px;
+  }
+
+  .kiosk-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .fingerprint-scan-radar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .radar-ring {
+    width: 100px;
+    height: 100px;
+  }
+
+  .kiosk-idle-content h3 {
+    font-size: 16px;
+  }
+
+  .kiosk-idle-content p {
+    font-size: 12px;
+  }
+
+  .scan-teacher-name {
+    font-size: 22px;
+  }
+
+  .scan-teacher-subject {
+    font-size: 13px;
+  }
+
   .scan-details-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+  }
+
+  .scan-icon-container {
+    width: 72px;
+    height: 72px;
+  }
+
+  .terminal-table-wrapper {
+    max-height: 300px;
+  }
+
+  /* Hide less important column on small screens */
+  .terminal-logs-table th:nth-child(3),
+  .terminal-logs-table td:nth-child(3) {
+    display: none;
+  }
+
+  .logs-count-badge {
+    font-size: 11px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .terminal-view-container {
+    padding: 10px;
     gap: 12px;
+  }
+
+  .giant-time {
+    font-size: 34px;
+  }
+
+  .terminal-header {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .kiosk-card {
+    padding: 16px 12px;
+  }
+
+  .scan-teacher-name {
+    font-size: 18px;
+  }
+
+  .terminal-logs-table .log-date-col {
+    display: none;
+  }
+
+  .terminal-table-wrapper {
+    max-height: 240px;
+  }
+}
+
+/* Tablets / iPad */
+@media (max-width: 968px) {
+  .terminal-view-container {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .terminal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding-bottom: 16px;
+  }
+
+  .terminal-header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .terminal-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* In single-column mode the kiosk card doesn't need to fill 100% height */
+  .terminal-kiosk-status {
+    height: auto;
+  }
+
+  .kiosk-card {
+    padding: 28px;
+    min-height: 340px;
+  }
+
+  .giant-time {
+    font-size: 56px;
+    letter-spacing: -1px;
+  }
+
+  .giant-date {
+    font-size: 15px;
+  }
+
+  .scan-teacher-name {
+    font-size: 26px;
+  }
+
+  .scan-details-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .terminal-table-wrapper {
+    max-height: 360px;
+  }
+
+  .terminal-logs-table {
+    font-size: 12px;
+  }
+
+  .terminal-logs-table td {
+    padding: 10px 12px;
+  }
+}
+
+/* Phones landscape / small tablets */
+@media (max-width: 640px) {
+  .terminal-view-container {
+    padding: 14px;
+    gap: 16px;
+  }
+
+  .terminal-brand h1 {
+    font-size: 16px;
+  }
+
+  .terminal-brand p {
+    font-size: 11px;
+  }
+
+  .terminal-logo-ring {
+    width: 38px;
+    height: 38px;
+  }
+
+  .btn-sound-toggle span {
+    display: none; /* hide text, show icon only */
+  }
+
+  .btn-sound-toggle {
+    padding: 8px 10px;
+    border-radius: 50%;
+  }
+
+  .giant-time {
+    font-size: 44px;
+    letter-spacing: -1px;
+  }
+
+  .giant-date {
+    font-size: 13px;
+  }
+
+  .giant-clock-container {
+    margin-bottom: 28px;
+  }
+
+  .kiosk-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+    min-height: 280px;
+  }
+
+  .fingerprint-scan-radar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .radar-ring {
+    width: 100px;
+    height: 100px;
+  }
+
+  .kiosk-idle-content h3 {
+    font-size: 16px;
+  }
+
+  .kiosk-idle-content p {
+    font-size: 12px;
+  }
+
+  .scan-teacher-name {
+    font-size: 22px;
+  }
+
+  .scan-teacher-subject {
+    font-size: 13px;
+  }
+
+  .scan-details-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+  }
+
+  .scan-icon-container {
+    width: 72px;
+    height: 72px;
+  }
+
+  .terminal-logs-panel {
+    min-height: auto;
+  }
+
+  .terminal-table-wrapper {
+    max-height: 280px;
+  }
+
+  /* Hide less important columns on small screens */
+  .terminal-logs-table th:nth-child(3),
+  .terminal-logs-table td:nth-child(3) {
+    display: none;
+  }
+
+  .logs-count-badge {
+    font-size: 11px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .terminal-view-container {
+    padding: 10px;
+    gap: 12px;
+  }
+
+  .giant-time {
+    font-size: 36px;
+  }
+
+  .terminal-header {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .kiosk-card {
+    padding: 16px 12px;
+    min-height: 240px;
+  }
+
+  .scan-teacher-name {
+    font-size: 18px;
+  }
+
+  /* Also hide date column on very small screens */
+  .terminal-logs-table .log-date-col {
+    display: none;
+  }
+
+  .terminal-table-wrapper {
+    max-height: 220px;
   }
 }
 
@@ -1623,3 +2020,470 @@ button, input, select {
   color: var(--text-secondary);
 }
 
+/* ==========================================================================
+   Custom Scrollbar — Terminal Log Panel
+   ========================================================================== */
+
+.terminal-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.terminal-table-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 99px;
+}
+
+.terminal-table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.35);
+  border-radius: 99px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.terminal-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.55);
+}
+
+/* Firefox */
+.terminal-table-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.35) rgba(255, 255, 255, 0.02);
+}
+
+/* ==========================================================================
+   Sidebar — Add Teacher Nav Item Accent
+   ========================================================================== */
+
+.nav-item-add {
+  color: var(--color-secondary) !important;
+  border: 1px dashed rgba(6, 182, 212, 0.2);
+  background: rgba(6, 182, 212, 0.03) !important;
+}
+
+.nav-item-add:hover {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+  color: var(--color-secondary) !important;
+}
+
+.nav-item-add.active {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  border-left: 3px solid var(--color-secondary) !important;
+  color: var(--color-secondary) !important;
+}
+
+/* ==========================================================================
+   Add Teacher Panel — Full Page Layout
+   ========================================================================== */
+
+.add-teacher-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.add-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-panel-header-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.add-panel-icon-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-secondary);
+  flex-shrink: 0;
+}
+
+.add-panel-header-title h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.add-panel-header-title p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.add-panel-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 10px;
+  color: var(--color-present);
+  font-weight: 600;
+  font-size: 14px;
+  animation: slideIn 0.3s ease;
+}
+
+.add-panel-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  color: #f87171;
+  font-size: 13px;
+}
+
+.add-panel-form {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  grid-template-rows: auto auto;
+  gap: 24px;
+}
+
+.add-panel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.add-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.add-panel-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.section-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ap-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.add-panel-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   Day Toggle Grid — Weekday Selector Buttons
+   ========================================================================== */
+
+.day-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.day-toggle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.day-toggle-btn:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.05);
+  color: var(--text-primary);
+}
+
+.day-toggle-btn.active {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-primary);
+}
+
+.day-toggle-btn.selected {
+  border-color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.day-toggle-btn.active.selected {
+  border-color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--text-primary);
+}
+
+.day-toggle-name {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.day-toggle-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 4px var(--color-primary);
+}
+
+/* ==========================================================================
+   Day Schedule Editor
+   ========================================================================== */
+
+.day-schedule-editor {
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.day-schedule-editor.active-day {
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.day-schedule-editor.inactive-day {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px dashed var(--border-color);
+}
+
+.day-editor-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.day-editor-title svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.day-active-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.day-active-toggle input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.day-time-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.day-time-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.day-time-col label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.day-time-divider {
+  font-size: 18px;
+  color: var(--text-muted);
+  margin-top: 22px;
+  flex-shrink: 0;
+}
+
+.time-selects-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.time-select {
+  width: auto !important;
+  flex: 1;
+  padding: 6px 8px !important;
+  font-size: 13px !important;
+}
+
+.time-separator {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.day-inactive-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ==========================================================================
+   Weekly Summary Chips
+   ========================================================================== */
+
+.weekly-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 4px;
+}
+
+.weekly-summary-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.weekly-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weekly-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  color: var(--color-secondary);
+}
+
+/* ==========================================================================
+   Enroll Status Panel (standalone, used in AddTeacherPanel)
+   ========================================================================== */
+
+.enroll-status-panel {
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.enroll-status-panel.enroll-progress {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.enroll-status-panel.enroll-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.enroll-status-panel.enroll-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.enroll-status-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.enroll-status-header strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.enroll-status-msg {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.enroll-progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.enroll-progress-bar > div {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.4s ease;
+}
+
+/* Responsive Add Panel */
+@media (max-width: 900px) {
+  .add-panel-form {
+    grid-template-columns: 1fr;
+  }
+
+  .day-toggle-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

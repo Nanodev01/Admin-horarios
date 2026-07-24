@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Fingerprint, History, School, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, Users, Fingerprint, History, School, ExternalLink, UserPlus } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
@@ -8,9 +8,10 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) => {
   const menuItems = [
-    { id: 'dashboard', label: 'Tablero Principal', icon: LayoutDashboard },
-    { id: 'teachers', label: 'Personal Docente', icon: Users },
-    { id: 'logs', label: 'Registro de Accesos', icon: History }
+    { id: 'dashboard',   label: 'Tablero Principal',   icon: LayoutDashboard },
+    { id: 'teachers',    label: 'Personal Docente',    icon: Users },
+    { id: 'add-teacher', label: 'Agregar Profesor',    icon: UserPlus },
+    { id: 'logs',        label: 'Registro de Accesos', icon: History }
   ];
 
   return (
@@ -22,14 +23,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
           <span>Administración</span>
         </div>
       </div>
-      
+
       <nav className="nav-menu">
         {menuItems.map((item) => {
           const Icon = item.icon;
+          const isAddTeacher = item.id === 'add-teacher';
           return (
             <button
               key={item.id}
-              className={`nav-item ${currentTab === item.id ? 'active' : ''}`}
+              className={`nav-item ${currentTab === item.id ? 'active' : ''} ${isAddTeacher ? 'nav-item-add' : ''}`}
               onClick={() => setCurrentTab(item.id)}
             >
               <Icon size={20} />
@@ -37,16 +39,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
             </button>
           );
         })}
-        
+
         <a
           href="/terminal"
           target="_blank"
           rel="noopener noreferrer"
           className="nav-item"
-          style={{ 
-            marginTop: 'auto', 
-            display: 'flex', 
-            alignItems: 'center', 
+          style={{
+            marginTop: 'auto',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'space-between',
             borderTop: '1px solid var(--border-color)',
             paddingTop: '16px',
@@ -60,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
           <ExternalLink size={14} className="text-muted" />
         </a>
       </nav>
-      
+
       <div className="sidebar-footer">
         <p>Sistema de Control Biométrico</p>
         <p>v1.0.0 Scalable</p>
